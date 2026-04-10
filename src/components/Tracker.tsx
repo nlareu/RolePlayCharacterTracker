@@ -75,7 +75,7 @@ const INITIAL_STATE: CharacterState = {
     { level: 3, total: 2, used: 0 },
   ],
   hitDice: [
-    { dieType: 'd8', total: 5, used: 0 }
+    { id: 'default-hd', dieType: 'd8', total: 5, used: 0 }
   ],
   abilities: [],
   buffs: [],
@@ -89,14 +89,26 @@ export function Tracker() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(char => ({
-            ...INITIAL_STATE,
-            ...char,
-            // Deduplicate spell slots just in case
-            spellSlots: char.spellSlots ? char.spellSlots.filter((s: SpellSlot, i: number, self: SpellSlot[]) => 
-              self.findIndex(t => t.level === s.level) === i
-            ) : INITIAL_STATE.spellSlots
-          }));
+          const seenIds = new Set();
+          return parsed
+            .filter(char => {
+              if (!char.id || seenIds.has(char.id)) return false;
+              seenIds.add(char.id);
+              return true;
+            })
+            .map(char => ({
+              ...INITIAL_STATE,
+              ...char,
+              // Deduplicate spell slots just in case
+              spellSlots: char.spellSlots ? char.spellSlots.filter((s: SpellSlot, i: number, self: SpellSlot[]) => 
+                self.findIndex(t => t.level === s.level) === i
+              ) : INITIAL_STATE.spellSlots,
+              // Ensure hit dice have IDs
+              hitDice: char.hitDice ? char.hitDice.map((hd, i) => ({
+                ...hd,
+                id: hd.id || `hd-${i}`
+              })) : INITIAL_STATE.hitDice
+            }));
         }
       } catch (e) {
         console.error("Failed to parse characters", e);
@@ -107,13 +119,24 @@ export function Tracker() {
     if (legacy) {
       try {
         const parsed = JSON.parse(legacy);
-        const char = { ...INITIAL_STATE, ...parsed, id: parsed.id || 'legacy' };
+        const char = { 
+          ...INITIAL_STATE, 
+          ...parsed, 
+          id: parsed.id || 'legacy',
+          spellSlots: parsed.spellSlots ? parsed.spellSlots.filter((s: SpellSlot, i: number, self: SpellSlot[]) => 
+            self.findIndex(t => t.level === s.level) === i
+          ) : INITIAL_STATE.spellSlots,
+          hitDice: parsed.hitDice ? parsed.hitDice.map((hd: any, i: number) => ({
+            ...hd,
+            id: hd.id || `hd-${i}`
+          })) : INITIAL_STATE.hitDice
+        };
         return [char];
       } catch (e) {
         console.error("Failed to parse legacy character", e);
       }
     }
-    return [{ ...INITIAL_STATE, id: Date.now().toString() }];
+    return [{ ...INITIAL_STATE, id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}` }];
   });
 
   const [activeCharacterId, setActiveCharacterId] = useState<string>(() => {
@@ -174,7 +197,7 @@ export function Tracker() {
   }, [activeCharacterId]);
 
   const createNewCharacter = () => {
-    const newChar = { ...INITIAL_STATE, id: Date.now().toString(), name: t.newCharacter };
+    const newChar = { ...INITIAL_STATE, id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: t.newCharacter };
     setCharacters(prev => [...prev, newChar]);
     setActiveCharacterId(newChar.id);
   };
@@ -520,7 +543,7 @@ export function Tracker() {
                   <div className="flex justify-between items-end">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Heart className="h-5 w-5 text-red-500" />
-                      {t.hp}
+                      {t.hpLong}
                     </CardTitle>
                     <div className="text-right">
                       <span className="text-3xl font-bold font-mono">{state.hp.current}</span>
@@ -585,17 +608,17 @@ export function Tracker() {
                     </motion.div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">{t.current} {t.hp}</Label>
-                      <div className="flex items-center gap-2">
-                        <Button variant="destructive" size="icon" className="h-12 w-12 shrink-0" onClick={() => updateHP(-1)}>
-                          <Minus className="h-6 w-6" />
+                      <Label className="text-[10px] uppercase text-muted-foreground tracking-wider">{t.current} {t.hp}</Label>
+                      <div className="flex items-center gap-1">
+                        <Button variant="destructive" size="icon" className="h-10 w-10 shrink-0" onClick={() => updateHP(-1)}>
+                          <Minus className="h-4 w-4" />
                         </Button>
                         <Input 
                           type="number" 
-                          className="h-12 text-center font-mono text-lg" 
-                          placeholder="Amt"
+                          className="h-10 text-center font-mono text-sm px-1" 
+                          placeholder={t.amount}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               const val = parseInt((e.target as HTMLInputElement).value);
@@ -604,21 +627,21 @@ export function Tracker() {
                             }
                           }}
                         />
-                        <Button variant="default" size="icon" className="h-12 w-12 shrink-0 bg-green-600 hover:bg-green-700" onClick={() => updateHP(1)}>
-                          <Plus className="h-6 w-6" />
+                        <Button variant="default" size="icon" className="h-10 w-10 shrink-0 bg-green-600 hover:bg-green-700" onClick={() => updateHP(1)}>
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">{t.tempHp}</Label>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" onClick={() => updateTempHP(-1)}>
-                          <Minus className="h-6 w-6" />
+                      <Label className="text-[10px] uppercase text-muted-foreground tracking-wider">{t.tempHp}</Label>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => updateTempHP(-1)}>
+                          <Minus className="h-4 w-4" />
                         </Button>
                         <Input 
                           type="number" 
-                          className="h-12 text-center font-mono text-lg" 
-                          placeholder="Amt"
+                          className="h-10 text-center font-mono text-sm px-1" 
+                          placeholder={t.amount}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               const val = parseInt((e.target as HTMLInputElement).value);
@@ -627,8 +650,8 @@ export function Tracker() {
                             }
                           }}
                         />
-                        <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" onClick={() => updateTempHP(1)}>
-                          <Plus className="h-6 w-6" />
+                        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => updateTempHP(1)}>
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -945,8 +968,8 @@ export function Tracker() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {state.hitDice.map((hd, idx) => (
-                    <div key={idx} className="space-y-3">
+                  {state.hitDice.map((hd) => (
+                    <div key={hd.id} className="space-y-3">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4 text-blue-500" />
@@ -955,8 +978,8 @@ export function Tracker() {
                               <button 
                                 onClick={() => setState(prev => ({
                                   ...prev,
-                                  hitDice: prev.hitDice.map((h, j) => 
-                                    j === idx ? { ...h, total: Math.max(0, h.total - 1), used: Math.min(h.used, Math.max(0, h.total - 1)) } : h
+                                  hitDice: prev.hitDice.map((h) => 
+                                    h.id === hd.id ? { ...h, total: Math.max(0, h.total - 1), used: Math.min(h.used, Math.max(0, h.total - 1)) } : h
                                   )
                                 }))} 
                                 className="p-1 hover:text-primary transition-colors"
@@ -967,8 +990,8 @@ export function Tracker() {
                               <button 
                                 onClick={() => setState(prev => ({
                                   ...prev,
-                                  hitDice: prev.hitDice.map((h, j) => 
-                                    j === idx ? { ...h, total: h.total + 1 } : h
+                                  hitDice: prev.hitDice.map((h) => 
+                                    h.id === hd.id ? { ...h, total: h.total + 1 } : h
                                   )
                                 }))} 
                                 className="p-1 hover:text-primary transition-colors"
@@ -990,8 +1013,8 @@ export function Tracker() {
                             key={i}
                             onClick={() => !isEditingHitDice && setState(prev => ({
                               ...prev,
-                              hitDice: prev.hitDice.map((h, j) => 
-                                j === idx ? { ...h, used: i < h.used ? i : i + 1 } : h
+                              hitDice: prev.hitDice.map((h) => 
+                                h.id === hd.id ? { ...h, used: i < h.used ? i : i + 1 } : h
                               )
                             }))}
                             disabled={isEditingHitDice}

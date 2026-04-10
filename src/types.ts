@@ -14,6 +14,7 @@ export type Ability = {
 };
 
 export type HitDice = {
+  id: string;
   dieType: string;
   total: number;
   used: number;

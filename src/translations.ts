@@ -6,7 +6,8 @@ export const translations = {
     combat: "Combat",
     magic: "Spells",
     abilities: "Abilities",
-    hp: "Hit Points",
+    hp: "HP",
+    hpLong: "Hit Points",
     tempHp: "Temp HP",
     inspiration: "Inspiration",
     longRest: "Long Rest",
@@ -77,14 +78,16 @@ export const translations = {
     confirmDeleteCharDesc: "This will permanently delete this character and all their data.",
     selectCharacter: "Select Character",
     noCharacters: "No characters found",
-    active: "Active"
+    active: "Active",
+    amount: "Amt"
   },
   es: {
     characterTracker: "Seguimiento de Personaje",
     combat: "Combate",
     magic: "Conjuros",
     abilities: "Habilidades",
-    hp: "Puntos de Golpe",
+    hp: "PG",
+    hpLong: "Puntos de Golpe",
     tempHp: "PG Temp",
     inspiration: "Inspiración",
     longRest: "Descanso Largo",
@@ -155,6 +158,7 @@ export const translations = {
     confirmDeleteCharDesc: "Esto eliminará permanentemente a este personaje y todos sus datos.",
     selectCharacter: "Seleccionar Personaje",
     noCharacters: "No se encontraron personajes",
-    active: "Activo"
+    active: "Activo",
+    amount: "Cant"
   }
 };
