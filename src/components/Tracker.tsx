@@ -14,7 +14,10 @@ import {
   Settings2,
   ChevronUp,
   ChevronDown,
-  Edit2
+  Edit2,
+  Menu,
+  Languages,
+  Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -26,6 +29,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -63,27 +74,47 @@ const INITIAL_STATE: CharacterState = {
     { dieType: 'd8', total: 5, used: 0 }
   ],
   abilities: [],
-  buffs: []
+  buffs: [],
+  preparedSpells: []
 };
 
 export function Tracker() {
   const [state, setState] = useState<CharacterState>(() => {
     const saved = localStorage.getItem('dnd_character_state');
-    return saved ? JSON.parse(saved) : INITIAL_STATE;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Deduplicate spell slots and hit dice just in case of corrupted data
+      if (parsed.spellSlots) {
+        const seen = new Set();
+        parsed.spellSlots = parsed.spellSlots.filter((s: SpellSlot) => {
+          if (seen.has(s.level)) return false;
+          seen.add(s.level);
+          return true;
+        });
+      }
+      return { ...INITIAL_STATE, ...parsed };
+    }
+    return INITIAL_STATE;
   });
 
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [newName, setNewName] = useState(state.name);
   const [isAddBuffOpen, setIsAddBuffOpen] = useState(false);
   const [newBuffName, setNewBuffName] = useState('');
+  const [newBuffDescription, setNewBuffDescription] = useState('');
   const [isAddAbilityOpen, setIsAddAbilityOpen] = useState(false);
   const [newAbilityName, setNewAbilityName] = useState('');
+  const [newAbilityDescription, setNewAbilityDescription] = useState('');
+  const [isAddSpellOpen, setIsAddSpellOpen] = useState(false);
+  const [newSpellName, setNewSpellName] = useState('');
   const [isEditingSpellSlots, setIsEditingSpellSlots] = useState(false);
   const [isEditingHitDice, setIsEditingHitDice] = useState(false);
   const [isEditingAbilities, setIsEditingAbilities] = useState(false);
   const [newSpellLevel, setNewSpellLevel] = useState(state.spellSlots.length > 0 ? Math.max(...state.spellSlots.map(s => s.level)) + 1 : 1);
   const [newAbilityTotal, setNewAbilityTotal] = useState(1);
   const [newAbilityResetOn, setNewAbilityResetOn] = useState<'short' | 'long'>('short');
+  const [selectedAbility, setSelectedAbility] = useState<Ability | null>(null);
+  const [selectedBuff, setSelectedBuff] = useState<Buff | null>(null);
   const [lang, setLang] = useState<Language>(() => {
     const saved = localStorage.getItem('dnd_tracker_lang');
     return (saved as Language) || 'es';
@@ -164,6 +195,24 @@ export function Tracker() {
     }));
   };
 
+  const togglePreparedSpell = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      preparedSpells: prev.preparedSpells.map(s => 
+        s.id === id ? { ...s, used: !s.used } : s
+      )
+    }));
+  };
+
+  const toggleBuff = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      buffs: prev.buffs.map(b => 
+        b.id === id ? { ...b, active: !b.active } : b
+      )
+    }));
+  };
+
   const resetShortRest = () => {
     setState(prev => ({
       ...prev,
@@ -177,84 +226,129 @@ export function Tracker() {
       hp: { ...prev.hp, current: prev.hp.max },
       spellSlots: prev.spellSlots.map(s => ({ ...s, used: 0 })),
       abilities: prev.abilities.map(a => ({ ...a, used: 0 })),
-      hitDice: prev.hitDice.map(hd => ({ ...hd, used: Math.max(0, hd.used - Math.floor(hd.total / 2)) }))
+      hitDice: prev.hitDice.map(hd => ({ ...hd, used: Math.max(0, hd.used - Math.floor(hd.total / 2)) })),
+      preparedSpells: prev.preparedSpells.map(s => ({ ...s, used: false }))
     }));
   };
 
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
-        <div className="flex flex-col min-w-0 max-w-[50%]">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-3 min-w-0 max-w-[70%]">
+          <Sheet>
+            <SheetTrigger render={<Button variant="ghost" size="icon" className="shrink-0" />}>
+              <Menu className="h-5 w-5" />
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] sm:w-[350px]">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-primary" />
+                  {t.settings}
+                </SheetTitle>
+                <SheetDescription>
+                  {t.characterTracker}
+                </SheetDescription>
+              </SheetHeader>
+              
+              <div className="flex flex-col gap-6 py-6 px-4">
+                {/* Language Selection */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Languages className="h-4 w-4" />
+                    {t.language}
+                  </div>
+                  <div className="flex items-center bg-secondary/30 rounded-lg p-1 border border-border/50">
+                    <button 
+                      onClick={() => setLang('en')} 
+                      className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${lang === 'en' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-primary'}`}
+                    >
+                      ENGLISH
+                    </button>
+                    <button 
+                      onClick={() => setLang('es')} 
+                      className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${lang === 'es' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-primary'}`}
+                    >
+                      ESPAÑOL
+                    </button>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Rename Character */}
+                <div className="space-y-3">
+                  <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
+                    <DialogTrigger render={
+                      <Button variant="outline" className="w-full justify-start gap-2 h-11">
+                        <Edit2 className="h-4 w-4" />
+                        {t.rename}
+                      </Button>
+                    } />
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>{t.rename}</DialogTitle>
+                        <DialogDescription>
+                          {t.enterName}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="name">{t.name}</Label>
+                          <Input
+                            id="name"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            className="col-span-3"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose render={<Button onClick={() => {
+                          if (newName) {
+                            setState(prev => ({ ...prev, name: newName }));
+                          }
+                        }} />}>{t.saveChanges}</DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <Separator />
+
+                {/* Reset Data */}
+                <div className="mt-auto pt-4">
+                  <AlertDialog>
+                    <AlertDialogTrigger render={
+                      <Button variant="ghost" className="w-full justify-start gap-2 h-11 text-destructive hover:text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-4 w-4" />
+                        {t.resetData}
+                      </Button>
+                    } />
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t.confirmReset}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t.confirmResetDesc}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel variant="outline" size="default">{t.cancel}</AlertDialogCancel>
+                        <AlertDialogAction variant="default" size="default" onClick={() => setState(INITIAL_STATE)}>{t.reset}</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          <div className="flex flex-col min-w-0">
             <h1 className="text-2xl font-bold tracking-tight text-primary truncate">
               {state.name}
             </h1>
-            <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
-              <DialogTrigger render={<Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-primary" />}>
-                <Edit2 className="h-3 w-3" />
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>{t.rename}</DialogTitle>
-                  <DialogDescription>
-                    {t.enterName}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">{t.name}</Label>
-                    <Input
-                      id="name"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      className="col-span-3"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <DialogClose render={<Button onClick={() => {
-                    if (newName) {
-                      setState(prev => ({ ...prev, name: newName }));
-                    }
-                  }} />}>{t.saveChanges}</DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <AlertDialog>
-              <AlertDialogTrigger render={<Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-destructive" />}>
-                <Trash2 className="h-3 w-3" />
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t.confirmReset}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t.confirmResetDesc}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel variant="outline" size="default">{t.cancel}</AlertDialogCancel>
-                  <AlertDialogAction variant="default" size="default" onClick={() => setState(INITIAL_STATE)}>{t.reset}</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-secondary/30 rounded-md p-0.5 border border-border/50 mr-2">
-            <button 
-              onClick={() => setLang('en')} 
-              className={`px-2 py-1 text-[10px] font-bold rounded transition-colors ${lang === 'en' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-primary'}`}
-            >
-              EN
-            </button>
-            <button 
-              onClick={() => setLang('es')} 
-              className={`px-2 py-1 text-[10px] font-bold rounded transition-colors ${lang === 'es' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-primary'}`}
-            >
-              ES
-            </button>
-          </div>
           <AlertDialog>
             <AlertDialogTrigger render={<Button variant="outline" size="icon" title={t.longRest} />}>
               <RotateCcw className="h-4 w-4" />
@@ -438,14 +532,41 @@ export function Tracker() {
                     <p className="text-sm text-muted-foreground italic text-center py-4">{t.noBuffs}</p>
                   ) : (
                     state.buffs.map(buff => (
-                      <div key={buff.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/50">
-                        <div>
-                          <p className="font-medium text-sm">{buff.name}</p>
-                          <p className="text-xs text-muted-foreground">{buff.description}</p>
+                      <div key={buff.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${buff.active ? 'bg-secondary/30 border-border/50' : 'bg-muted/20 border-transparent opacity-60'}`}>
+                        <div className="min-w-0 flex-1 mr-2">
+                          <p className={`font-medium text-sm truncate ${!buff.active ? 'text-muted-foreground line-through' : ''}`}>{buff.name}</p>
+                          {buff.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {buff.description}
+                              {buff.description.length > 40 && (
+                                <button 
+                                  onClick={() => setSelectedBuff(buff)}
+                                  className="ml-1 text-primary hover:underline font-medium"
+                                >
+                                  ...
+                                </button>
+                              )}
+                            </p>
+                          )}
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setState(prev => ({ ...prev, buffs: prev.buffs.filter(b => b.id !== buff.id) }))}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleBuff(buff.id)}
+                            className={`
+                              h-7 w-7 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                              ${!buff.active 
+                                ? 'bg-muted border-muted-foreground/30 text-muted-foreground' 
+                                : 'bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]'
+                              }
+                              hover:scale-110 active:scale-95
+                            `}
+                          >
+                            {!buff.active ? null : <div className="h-2 w-2 rounded-full bg-primary" />}
+                          </button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" onClick={() => setState(prev => ({ ...prev, buffs: prev.buffs.filter(b => b.id !== buff.id) }))}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -470,15 +591,25 @@ export function Tracker() {
                             placeholder="e.g. Bless, Haste"
                           />
                         </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="buff-description">{t.description}</Label>
+                          <Input
+                            id="buff-description"
+                            value={newBuffDescription}
+                            onChange={(e) => setNewBuffDescription(e.target.value)}
+                            placeholder={t.descriptionPlaceholder}
+                          />
+                        </div>
                       </div>
                       <DialogFooter>
                         <DialogClose render={<Button onClick={() => {
                           if (newBuffName) {
                             setState(prev => ({
                               ...prev,
-                              buffs: [...prev.buffs, { id: Date.now().toString(), name: newBuffName, description: 'Temporal effect' }]
+                              buffs: [...prev.buffs, { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: newBuffName, description: newBuffDescription, active: true }]
                             }));
                             setNewBuffName('');
+                            setNewBuffDescription('');
                           }
                         }} />}>{t.addBuff}</DialogClose>
                       </DialogFooter>
@@ -583,6 +714,99 @@ export function Tracker() {
                   </CardContent>
                 </Card>
               )}
+
+              <Separator className="my-6" />
+
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t.alwaysPreparedSpells}</h3>
+                <Dialog open={isAddSpellOpen} onOpenChange={setIsAddSpellOpen}>
+                  <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={t.addSpell} />}>
+                    <Plus className="h-4 w-4" />
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>{t.addSpell}</DialogTitle>
+                      <DialogDescription>
+                        {t.abilityDesc}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="spell-name">{t.name}</Label>
+                        <Input
+                          id="spell-name"
+                          value={newSpellName}
+                          onChange={(e) => setNewSpellName(e.target.value)}
+                          placeholder="e.g. Fire Bolt, Cure Wounds"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <DialogClose render={<Button onClick={() => {
+                        if (newSpellName) {
+                          setState(prev => ({
+                            ...prev,
+                            preparedSpells: [...prev.preparedSpells, { id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: newSpellName, used: false }]
+                          }));
+                          setNewSpellName('');
+                        }
+                      }} />}>{t.addSpell}</DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="space-y-3">
+                {state.preparedSpells.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic text-center py-4">{t.noSpells}</p>
+                ) : (
+                  state.preparedSpells.map(spell => (
+                    <Card key={spell.id} className="bg-card/40 border-primary/10 group overflow-hidden">
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${spell.used ? 'bg-muted' : 'bg-primary/10'}`}>
+                            <Zap className={`h-4 w-4 ${spell.used ? 'text-muted-foreground' : 'text-primary'}`} />
+                          </div>
+                          <span className={`font-medium text-sm truncate ${spell.used ? 'text-muted-foreground line-through' : ''}`}>{spell.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => togglePreparedSpell(spell.id)}
+                            className={`
+                              h-8 w-8 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                              ${spell.used 
+                                ? 'bg-muted border-muted-foreground/30 text-muted-foreground' 
+                                : 'bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]'
+                              }
+                              hover:scale-110 active:scale-95
+                            `}
+                          >
+                            {spell.used ? <Minus className="h-4 w-4" /> : <Zap className="h-4 w-4 fill-primary" />}
+                          </button>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" />}>
+                              <Trash2 className="h-4 w-4" />
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{t.confirmDeleteSpell}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {t.confirmDeleteSpellDesc}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel variant="outline" size="default">{t.cancel}</AlertDialogCancel>
+                                <AlertDialogAction variant="default" size="default" onClick={() => setState(prev => ({ ...prev, preparedSpells: prev.preparedSpells.filter(s => s.id !== spell.id) }))}>{t.reset}</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
             </motion.div>
           </TabsContent>
 
@@ -715,8 +939,21 @@ export function Tracker() {
                     <div className={`h-1 w-full ${ability.resetOn === 'short' ? 'bg-orange-500' : 'bg-purple-500'}`} />
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <p className="font-bold">{ability.name}</p>
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <p className="font-bold truncate">{ability.name}</p>
+                          {ability.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {ability.description}
+                              {ability.description.length > 40 && (
+                                <button 
+                                  onClick={() => setSelectedAbility(ability)}
+                                  className="ml-1 text-primary hover:underline font-medium"
+                                >
+                                  ...
+                                </button>
+                              )}
+                            </p>
+                          )}
                           <p className="text-[10px] uppercase tracking-tighter text-muted-foreground">
                             {t.resetOn} {ability.resetOn === 'short' ? t.shortRestAbbr : t.longRestAbbr} rest
                           </p>
@@ -807,6 +1044,15 @@ export function Tracker() {
                         placeholder="e.g. Rage, Ki Points"
                       />
                     </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="ability-description">{t.description}</Label>
+                      <Input
+                        id="ability-description"
+                        value={newAbilityDescription}
+                        onChange={(e) => setNewAbilityDescription(e.target.value)}
+                        placeholder={t.descriptionPlaceholder}
+                      />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="ability-total">{t.uses}</Label>
@@ -843,18 +1089,58 @@ export function Tracker() {
                         setState(prev => ({
                           ...prev,
                           abilities: [...prev.abilities, { 
-                            id: Date.now().toString(), 
+                            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
                             name: newAbilityName, 
+                            description: newAbilityDescription,
                             total: newAbilityTotal, 
                             used: 0, 
                             resetOn: newAbilityResetOn 
                           }]
                         }));
                         setNewAbilityName('');
+                        setNewAbilityDescription('');
                         setNewAbilityTotal(1);
                         setNewAbilityResetOn('short');
                       }
                     }} />}>{t.addAbility}</DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={!!selectedAbility} onOpenChange={(open) => !open && setSelectedAbility(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{selectedAbility?.name}</DialogTitle>
+                    <DialogDescription>
+                      {t.details}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {selectedAbility?.description}
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={() => setSelectedAbility(null)}>{t.cancel}</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={!!selectedBuff} onOpenChange={(open) => !open && setSelectedBuff(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{selectedBuff?.name}</DialogTitle>
+                    <DialogDescription>
+                      {t.details}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {selectedBuff?.description}
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={() => setSelectedBuff(null)}>{t.cancel}</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

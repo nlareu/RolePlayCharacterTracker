@@ -7,6 +7,7 @@ export type SpellSlot = {
 export type Ability = {
   id: string;
   name: string;
+  description?: string;
   total: number;
   used: number;
   resetOn: 'short' | 'long';
@@ -23,6 +24,13 @@ export type Buff = {
   name: string;
   description: string;
   duration?: string;
+  active: boolean;
+};
+
+export type PreparedSpell = {
+  id: string;
+  name: string;
+  used: boolean;
 };
 
 export type CharacterState = {
@@ -37,4 +45,5 @@ export type CharacterState = {
   hitDice: HitDice[];
   abilities: Ability[];
   buffs: Buff[];
+  preparedSpells: PreparedSpell[];
 };
