@@ -1,0 +1,5 @@
+{
+  "name": "D&D Combat & Resource Tracker",
+  "description": "A high-contrast, mobile-optimized tool for tracking HP, spell slots, hit dice, and abilities during D&D sessions.",
+  "requestFramePermissions": []
+}
