@@ -20,6 +20,8 @@ export const translations = {
     confirmResetDesc: "This will reset all character data to their initial state. This action cannot be undone.",
     confirmLongRest: "Take a Long Rest?",
     confirmLongRestDesc: "This will restore all HP, spell slots, and abilities. It will also restore half of your maximum Hit Dice.",
+    confirmShortRest: "Take a Short Rest?",
+    confirmShortRestDesc: "This will restore all abilities that reset on a short rest.",
     spellcasting: "Spellcasting",
     editSlots: "Edit Slots",
     doneEditing: "Done Editing",
@@ -51,7 +53,11 @@ export const translations = {
     deathSaves: "Death Saves",
     stabilized: "Stabilized",
     successes: "Successes",
-    failures: "Failures"
+    failures: "Failures",
+    editHitDice: "Edit Hit Dice",
+    uses: "Uses",
+    resetType: "Reset Type",
+    editAbilities: "Edit Abilities"
   },
   es: {
     characterTracker: "Seguimiento de Personaje",
@@ -72,6 +78,8 @@ export const translations = {
     confirmResetDesc: "Esto restablecerá todos los datos del personaje a su estado inicial. Esta acción no se puede deshacer.",
     confirmLongRest: "¿Tomar un Descanso Largo?",
     confirmLongRestDesc: "Esto restaurará todos los PG, casillas de hechizo y habilidades. También restaurará la mitad de tus Dados de Golpe máximos.",
+    confirmShortRest: "¿Tomar un Descanso Corto?",
+    confirmShortRestDesc: "Esto restaurará todas las habilidades que se reinician con un descanso corto.",
     spellcasting: "Lanzamiento de Hechizos",
     editSlots: "Editar Casillas",
     doneEditing: "Finalizar",
@@ -103,6 +111,10 @@ export const translations = {
     deathSaves: "Salvaciones de Muerte",
     stabilized: "Estabilizado",
     successes: "Éxitos",
-    failures: "Fallos"
+    failures: "Fallos",
+    editHitDice: "Editar Dados de Golpe",
+    uses: "Usos",
+    resetType: "Tipo de Reinicio",
+    editAbilities: "Editar Habilidades"
   }
 };

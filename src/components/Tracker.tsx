@@ -79,7 +79,11 @@ export function Tracker() {
   const [isAddAbilityOpen, setIsAddAbilityOpen] = useState(false);
   const [newAbilityName, setNewAbilityName] = useState('');
   const [isEditingSpellSlots, setIsEditingSpellSlots] = useState(false);
+  const [isEditingHitDice, setIsEditingHitDice] = useState(false);
+  const [isEditingAbilities, setIsEditingAbilities] = useState(false);
   const [newSpellLevel, setNewSpellLevel] = useState(state.spellSlots.length > 0 ? Math.max(...state.spellSlots.map(s => s.level)) + 1 : 1);
+  const [newAbilityTotal, setNewAbilityTotal] = useState(1);
+  const [newAbilityResetOn, setNewAbilityResetOn] = useState<'short' | 'long'>('short');
   const [lang, setLang] = useState<Language>(() => {
     const saved = localStorage.getItem('dnd_tracker_lang');
     return (saved as Language) || 'es';
@@ -151,11 +155,11 @@ export function Tracker() {
     }));
   };
 
-  const toggleAbility = (id: string) => {
+  const toggleAbility = (id: string, index: number) => {
     setState(prev => ({
       ...prev,
       abilities: prev.abilities.map(a => 
-        a.id === id ? { ...a, used: a.used >= a.total ? 0 : a.used + 1 } : a
+        a.id === id ? { ...a, used: index < a.used ? index : index + 1 } : a
       )
     }));
   };
@@ -591,31 +595,76 @@ export function Tracker() {
             >
               <Card className="bg-card/40 border-primary/10">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">{t.hitDice}</CardTitle>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">{t.hitDice}</CardTitle>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setIsEditingHitDice(!isEditingHitDice)} 
+                      className={`h-8 text-xs gap-1 ${isEditingHitDice ? 'text-primary bg-primary/10' : ''}`}
+                    >
+                      <Settings2 className="h-3 w-3" /> {isEditingHitDice ? t.doneEditing : t.editHitDice}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {state.hitDice.map((hd, idx) => (
                     <div key={idx} className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="font-mono text-lg font-bold">{hd.dieType}</span>
-                        <span className="text-sm font-mono text-muted-foreground">{hd.total - hd.used} / {hd.total} {t.remaining}</span>
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-blue-500" />
+                          {isEditingHitDice ? (
+                            <div className="flex items-center gap-2 bg-secondary/30 rounded-md px-1 py-0.5 border border-border/50">
+                              <button 
+                                onClick={() => setState(prev => ({
+                                  ...prev,
+                                  hitDice: prev.hitDice.map((h, j) => 
+                                    j === idx ? { ...h, total: Math.max(0, h.total - 1), used: Math.min(h.used, Math.max(0, h.total - 1)) } : h
+                                  )
+                                }))} 
+                                className="p-1 hover:text-primary transition-colors"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="text-xs font-mono font-bold w-4 text-center">{hd.total}</span>
+                              <button 
+                                onClick={() => setState(prev => ({
+                                  ...prev,
+                                  hitDice: prev.hitDice.map((h, j) => 
+                                    j === idx ? { ...h, total: h.total + 1 } : h
+                                  )
+                                }))} 
+                                className="p-1 hover:text-primary transition-colors"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-sm font-medium">{t.hitDice}</span>
+                          )}
+                        </div>
+                        <span className="text-sm font-mono text-muted-foreground">
+                          {isEditingHitDice ? hd.dieType : `${hd.total - hd.used} / ${hd.total} ${t.remaining}`}
+                        </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {Array.from({ length: hd.total }).map((_, i) => (
                           <button
                             key={i}
-                            onClick={() => setState(prev => ({
+                            onClick={() => !isEditingHitDice && setState(prev => ({
                               ...prev,
                               hitDice: prev.hitDice.map((h, j) => 
                                 j === idx ? { ...h, used: i < h.used ? i : i + 1 } : h
                               )
                             }))}
+                            disabled={isEditingHitDice}
                             className={`
                               h-10 w-10 rounded-full border-2 transition-all duration-200 flex items-center justify-center
                               ${i < hd.used 
                                 ? 'bg-muted border-muted-foreground/30 text-muted-foreground' 
                                 : 'bg-blue-500/10 border-blue-500 text-blue-500'
                               }
+                              ${isEditingHitDice ? 'opacity-50 cursor-default' : 'hover:scale-105 active:scale-95'}
                             `}
                           >
                             <Shield className={`h-4 w-4 ${i < hd.used ? '' : 'fill-blue-500'}`} />
@@ -629,37 +678,107 @@ export function Tracker() {
 
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t.features}</h3>
-                <Button variant="ghost" size="sm" onClick={resetShortRest} className="h-8 text-xs gap-1">
-                  <RotateCcw className="h-3 w-3" /> {t.shortRest}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsEditingAbilities(!isEditingAbilities)} 
+                    className={`h-8 text-xs gap-1 ${isEditingAbilities ? 'text-primary bg-primary/10' : ''}`}
+                  >
+                    <Settings2 className="h-3 w-3" /> {isEditingAbilities ? t.doneEditing : t.editAbilities}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger render={<Button variant="ghost" size="sm" className="h-8 text-xs gap-1" />}>
+                      <RotateCcw className="h-3 w-3" /> {t.shortRest}
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t.confirmShortRest}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t.confirmShortRestDesc}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel variant="outline" size="default">{t.cancel}</AlertDialogCancel>
+                        <AlertDialogAction variant="default" size="default" onClick={resetShortRest}>{t.shortRest}</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
 
               {state.abilities.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic text-center py-4">{t.noAbilities}</p>
               ) : (
                 state.abilities.map((ability) => (
-                  <Card key={ability.id} className="bg-card/40 border-primary/10 overflow-hidden">
+                  <Card key={ability.id} className="bg-card/40 border-primary/10 overflow-hidden relative">
                     <div className={`h-1 w-full ${ability.resetOn === 'short' ? 'bg-orange-500' : 'bg-purple-500'}`} />
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
                           <p className="font-bold">{ability.name}</p>
-                          <p className="text-[10px] uppercase tracking-tighter text-muted-foreground">{t.resetOn} {ability.resetOn === 'short' ? t.shortRestAbbr : t.longRestAbbr} rest</p>
+                          <p className="text-[10px] uppercase tracking-tighter text-muted-foreground">
+                            {t.resetOn} {ability.resetOn === 'short' ? t.shortRestAbbr : t.longRestAbbr} rest
+                          </p>
                         </div>
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: ability.total }).map((_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => toggleAbility(ability.id)}
-                              className={`
-                                h-8 w-8 rounded border transition-all
-                                ${i < ability.used 
-                                  ? 'bg-muted border-muted-foreground/20' 
-                                  : 'bg-primary/20 border-primary shadow-[0_0_8px_rgba(var(--primary),0.1)]'
-                                }
-                              `}
-                            />
-                          ))}
+                        
+                        <div className="flex items-center gap-3">
+                          {isEditingAbilities ? (
+                            <div className="flex items-center gap-2 bg-secondary/30 rounded-md px-1 py-0.5 border border-border/50">
+                              <button 
+                                onClick={() => setState(prev => ({
+                                  ...prev,
+                                  abilities: prev.abilities.map(a => 
+                                    a.id === ability.id ? { ...a, total: Math.max(1, a.total - 1), used: Math.min(a.used, Math.max(1, a.total - 1)) } : a
+                                  )
+                                }))} 
+                                className="p-1 hover:text-primary transition-colors"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="text-xs font-mono font-bold w-4 text-center">{ability.total}</span>
+                              <button 
+                                onClick={() => setState(prev => ({
+                                  ...prev,
+                                  abilities: prev.abilities.map(a => 
+                                    a.id === ability.id ? { ...a, total: a.total + 1 } : a
+                                  )
+                                }))} 
+                                className="p-1 hover:text-primary transition-colors"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                              <Separator orientation="vertical" className="h-3 mx-1" />
+                              <button 
+                                onClick={() => setState(prev => ({
+                                  ...prev,
+                                  abilities: prev.abilities.filter(a => a.id !== ability.id)
+                                }))} 
+                                className="p-1 hover:text-destructive transition-colors"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              {Array.from({ length: ability.total }).map((_, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => toggleAbility(ability.id, i)}
+                                  className={`
+                                    h-7 w-7 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                                    ${i < ability.used 
+                                      ? 'bg-muted border-muted-foreground/30 text-muted-foreground' 
+                                      : 'bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]'
+                                    }
+                                    hover:scale-110 active:scale-95
+                                  `}
+                                >
+                                  {i < ability.used ? null : <div className="h-2 w-2 rounded-full bg-primary" />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -688,6 +807,35 @@ export function Tracker() {
                         placeholder="e.g. Rage, Ki Points"
                       />
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="ability-total">{t.uses}</Label>
+                        <Input
+                          id="ability-total"
+                          type="number"
+                          min="1"
+                          value={newAbilityTotal}
+                          onChange={(e) => setNewAbilityTotal(parseInt(e.target.value) || 1)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t.resetType}</Label>
+                        <div className="flex bg-secondary/30 p-1 rounded-md border border-border/50">
+                          <button
+                            onClick={() => setNewAbilityResetOn('short')}
+                            className={`flex-1 text-[10px] py-1 rounded transition-all ${newAbilityResetOn === 'short' ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-secondary'}`}
+                          >
+                            {t.shortRestAbbr}
+                          </button>
+                          <button
+                            onClick={() => setNewAbilityResetOn('long')}
+                            className={`flex-1 text-[10px] py-1 rounded transition-all ${newAbilityResetOn === 'long' ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-secondary'}`}
+                          >
+                            {t.longRestAbbr}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <DialogFooter>
                     <DialogClose render={<Button onClick={() => {
@@ -697,12 +845,14 @@ export function Tracker() {
                           abilities: [...prev.abilities, { 
                             id: Date.now().toString(), 
                             name: newAbilityName, 
-                            total: 1, 
+                            total: newAbilityTotal, 
                             used: 0, 
-                            resetOn: 'short' 
+                            resetOn: newAbilityResetOn 
                           }]
                         }));
                         setNewAbilityName('');
+                        setNewAbilityTotal(1);
+                        setNewAbilityResetOn('short');
                       }
                     }} />}>{t.addAbility}</DialogClose>
                   </DialogFooter>
