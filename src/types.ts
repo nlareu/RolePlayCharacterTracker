@@ -34,6 +34,7 @@ export type PreparedSpell = {
 };
 
 export type CharacterState = {
+  id: string;
   name: string;
   hp: {
     current: number;

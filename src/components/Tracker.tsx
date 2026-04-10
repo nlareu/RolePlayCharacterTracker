@@ -17,7 +17,10 @@ import {
   Edit2,
   Menu,
   Languages,
-  Settings
+  Settings,
+  Users,
+  UserPlus,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -62,6 +65,7 @@ import { CharacterState, SpellSlot, Ability, HitDice, Buff } from '../types';
 import { translations, Language } from '../translations';
 
 const INITIAL_STATE: CharacterState = {
+  id: 'default',
   name: 'Aventurero',
   hp: { current: 25, max: 25, temp: 0 },
   inspiration: false,
@@ -79,23 +83,52 @@ const INITIAL_STATE: CharacterState = {
 };
 
 export function Tracker() {
-  const [state, setState] = useState<CharacterState>(() => {
-    const saved = localStorage.getItem('dnd_character_state');
+  const [characters, setCharacters] = useState<CharacterState[]>(() => {
+    const saved = localStorage.getItem('dnd_tracker_characters');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      // Deduplicate spell slots and hit dice just in case of corrupted data
-      if (parsed.spellSlots) {
-        const seen = new Set();
-        parsed.spellSlots = parsed.spellSlots.filter((s: SpellSlot) => {
-          if (seen.has(s.level)) return false;
-          seen.add(s.level);
-          return true;
-        });
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(char => ({
+            ...INITIAL_STATE,
+            ...char,
+            // Deduplicate spell slots just in case
+            spellSlots: char.spellSlots ? char.spellSlots.filter((s: SpellSlot, i: number, self: SpellSlot[]) => 
+              self.findIndex(t => t.level === s.level) === i
+            ) : INITIAL_STATE.spellSlots
+          }));
+        }
+      } catch (e) {
+        console.error("Failed to parse characters", e);
       }
-      return { ...INITIAL_STATE, ...parsed };
     }
-    return INITIAL_STATE;
+    // Fallback to legacy single character state if it exists
+    const legacy = localStorage.getItem('dnd_character_state');
+    if (legacy) {
+      try {
+        const parsed = JSON.parse(legacy);
+        const char = { ...INITIAL_STATE, ...parsed, id: parsed.id || 'legacy' };
+        return [char];
+      } catch (e) {
+        console.error("Failed to parse legacy character", e);
+      }
+    }
+    return [{ ...INITIAL_STATE, id: Date.now().toString() }];
   });
+
+  const [activeCharacterId, setActiveCharacterId] = useState<string>(() => {
+    const saved = localStorage.getItem('dnd_tracker_active_id');
+    if (saved && characters.some(c => c.id === saved)) {
+      return saved;
+    }
+    return characters[0]?.id || 'default';
+  });
+
+  const state = characters.find(c => c.id === activeCharacterId) || characters[0] || INITIAL_STATE;
+
+  const setState = (updater: (prev: CharacterState) => CharacterState) => {
+    setCharacters(prev => prev.map(c => c.id === activeCharacterId ? updater(c) : c));
+  };
 
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [newName, setNewName] = useState(state.name);
@@ -111,6 +144,12 @@ export function Tracker() {
   const [isEditingHitDice, setIsEditingHitDice] = useState(false);
   const [isEditingAbilities, setIsEditingAbilities] = useState(false);
   const [newSpellLevel, setNewSpellLevel] = useState(state.spellSlots.length > 0 ? Math.max(...state.spellSlots.map(s => s.level)) + 1 : 1);
+
+  // Sync local state when character changes
+  useEffect(() => {
+    setNewName(state.name);
+    setNewSpellLevel(state.spellSlots.length > 0 ? Math.max(...state.spellSlots.map(s => s.level)) + 1 : 1);
+  }, [activeCharacterId, state.name, state.spellSlots]);
   const [newAbilityTotal, setNewAbilityTotal] = useState(1);
   const [newAbilityResetOn, setNewAbilityResetOn] = useState<'short' | 'long'>('short');
   const [selectedAbility, setSelectedAbility] = useState<Ability | null>(null);
@@ -127,8 +166,29 @@ export function Tracker() {
   }, [lang]);
 
   useEffect(() => {
-    localStorage.setItem('dnd_character_state', JSON.stringify(state));
-  }, [state]);
+    localStorage.setItem('dnd_tracker_characters', JSON.stringify(characters));
+  }, [characters]);
+
+  useEffect(() => {
+    localStorage.setItem('dnd_tracker_active_id', activeCharacterId);
+  }, [activeCharacterId]);
+
+  const createNewCharacter = () => {
+    const newChar = { ...INITIAL_STATE, id: Date.now().toString(), name: t.newCharacter };
+    setCharacters(prev => [...prev, newChar]);
+    setActiveCharacterId(newChar.id);
+  };
+
+  const deleteCharacter = (id: string) => {
+    if (characters.length <= 1) return;
+    setCharacters(prev => {
+      const filtered = prev.filter(c => c.id !== id);
+      if (activeCharacterId === id) {
+        setActiveCharacterId(filtered[0].id);
+      }
+      return filtered;
+    });
+  };
 
   const updateHP = (amount: number) => {
     setState(prev => {
@@ -251,6 +311,59 @@ export function Tracker() {
               </SheetHeader>
               
               <div className="flex flex-col gap-6 py-6 px-4">
+                {/* Character Selection */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      {t.characters}
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={createNewCharacter}>
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                    {characters.map(char => (
+                      <div key={char.id} className="flex items-center gap-2 group">
+                        <Button 
+                          variant={activeCharacterId === char.id ? "secondary" : "ghost"} 
+                          className={`flex-1 justify-start gap-2 h-9 text-xs ${activeCharacterId === char.id ? 'bg-primary/10 text-primary border border-primary/20' : ''}`}
+                          onClick={() => setActiveCharacterId(char.id)}
+                        >
+                          <div className={`h-2 w-2 rounded-full ${activeCharacterId === char.id ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                          <span className="truncate">{char.name}</span>
+                          {activeCharacterId === char.id && <Check className="h-3 w-3 ml-auto shrink-0" />}
+                        </Button>
+                        {characters.length > 1 && (
+                          <AlertDialog>
+                            <AlertDialogTrigger render={
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            } />
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{t.confirmDeleteChar}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {t.confirmDeleteCharDesc}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel variant="outline" size="default">{t.cancel}</AlertDialogCancel>
+                                <AlertDialogAction variant="default" size="default" onClick={() => deleteCharacter(char.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  {t.deleteCharacter}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
                 {/* Language Selection */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -303,7 +416,7 @@ export function Tracker() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <DialogClose render={<Button onClick={() => {
+                        <DialogClose render={<Button variant="default" size="default" onClick={() => {
                           if (newName) {
                             setState(prev => ({ ...prev, name: newName }));
                           }
@@ -333,7 +446,7 @@ export function Tracker() {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel variant="outline" size="default">{t.cancel}</AlertDialogCancel>
-                        <AlertDialogAction variant="default" size="default" onClick={() => setState(INITIAL_STATE)}>{t.reset}</AlertDialogAction>
+                        <AlertDialogAction variant="default" size="default" onClick={() => setState(() => INITIAL_STATE)}>{t.reset}</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -602,7 +715,7 @@ export function Tracker() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <DialogClose render={<Button onClick={() => {
+                        <DialogClose render={<Button variant="default" size="default" onClick={() => {
                           if (newBuffName) {
                             setState(prev => ({
                               ...prev,
@@ -742,7 +855,7 @@ export function Tracker() {
                       </div>
                     </div>
                     <DialogFooter>
-                      <DialogClose render={<Button onClick={() => {
+                      <DialogClose render={<Button variant="default" size="default" onClick={() => {
                         if (newSpellName) {
                           setState(prev => ({
                             ...prev,
@@ -1084,7 +1197,7 @@ export function Tracker() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <DialogClose render={<Button onClick={() => {
+                    <DialogClose render={<Button variant="default" size="default" onClick={() => {
                       if (newAbilityName) {
                         setState(prev => ({
                           ...prev,

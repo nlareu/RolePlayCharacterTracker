@@ -69,7 +69,15 @@ export const translations = {
     cast: "Cast",
     noSpells: "No spells added yet",
     confirmDeleteSpell: "Delete Spell?",
-    confirmDeleteSpellDesc: "Are you sure you want to remove this spell from your always prepared list?"
+    confirmDeleteSpellDesc: "Are you sure you want to remove this spell from your always prepared list?",
+    characters: "Characters",
+    newCharacter: "New Character",
+    deleteCharacter: "Delete Character",
+    confirmDeleteChar: "Delete Character?",
+    confirmDeleteCharDesc: "This will permanently delete this character and all their data.",
+    selectCharacter: "Select Character",
+    noCharacters: "No characters found",
+    active: "Active"
   },
   es: {
     characterTracker: "Seguimiento de Personaje",
@@ -139,6 +147,14 @@ export const translations = {
     cast: "Lanzar",
     noSpells: "No se han añadido conjuros",
     confirmDeleteSpell: "¿Eliminar Conjuro?",
-    confirmDeleteSpellDesc: "¿Estás seguro de que quieres eliminar este conjuros de tu lista de siempre preparados?"
+    confirmDeleteSpellDesc: "¿Estás seguro de que quieres eliminar este conjuros de tu lista de siempre preparados?",
+    characters: "Personajes",
+    newCharacter: "Nuevo Personaje",
+    deleteCharacter: "Eliminar Personaje",
+    confirmDeleteChar: "¿Eliminar Personaje?",
+    confirmDeleteCharDesc: "Esto eliminará permanentemente a este personaje y todos sus datos.",
+    selectCharacter: "Seleccionar Personaje",
+    noCharacters: "No se encontraron personajes",
+    active: "Activo"
   }
 };
