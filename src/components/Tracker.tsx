@@ -1238,19 +1238,48 @@ export function Tracker() {
                                 className="h-3 mx-0.5"
                               />
                               {isEditingBuffs && (
-                                <button
-                                  onClick={() =>
-                                    setState((prev) => ({
-                                      ...prev,
-                                      buffs: prev.buffs.filter(
-                                        (b) => b.id !== buff.id,
-                                      ),
-                                    }))
-                                  }
-                                  className="p-1 hover:text-destructive transition-colors"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger
+                                    render={
+                                      <button className="p-1 hover:text-destructive transition-colors">
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    }
+                                  />
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        {t.confirmDeleteBuff || "Delete Buff?"}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {`Are you sure you want to delete "${buff.name}"?`}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel
+                                        variant="outline"
+                                        size="default"
+                                      >
+                                        {t.cancel}
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        variant="default"
+                                        size="default"
+                                        onClick={() =>
+                                          setState((prev) => ({
+                                            ...prev,
+                                            buffs: prev.buffs.filter(
+                                              (b) => b.id !== buff.id,
+                                            ),
+                                          }))
+                                        }
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        {t.delete || "Delete"}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                             </div>
                           ) : (
@@ -1354,12 +1383,42 @@ export function Tracker() {
                               orientation="vertical"
                               className="h-3 mx-1"
                             />
-                            <button
-                              onClick={() => removeSpellLevel(slot.level)}
-                              className="p-1 hover:text-destructive transition-colors"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
+                            <AlertDialog>
+                              <AlertDialogTrigger
+                                render={
+                                  <button className="p-1 hover:text-destructive transition-colors">
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                }
+                              />
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {t.confirmDeleteSpellLevel ||
+                                      "Delete Spell Level?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {`Are you sure you want to delete spell level ${slot.level}?`}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel
+                                    variant="outline"
+                                    size="default"
+                                  >
+                                    {t.cancel}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    variant="default"
+                                    size="default"
+                                    onClick={() => removeSpellLevel(slot.level)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {t.delete || "Delete"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         ) : (
                           <span className="text-xs font-mono text-muted-foreground">
@@ -2071,19 +2130,49 @@ export function Tracker() {
                                 className="h-3 mx-0.5"
                               />
                               {isEditingAbilities && (
-                                <button
-                                  onClick={() =>
-                                    setState((prev) => ({
-                                      ...prev,
-                                      abilities: prev.abilities.filter(
-                                        (a) => a.id !== ability.id,
-                                      ),
-                                    }))
-                                  }
-                                  className="p-1 hover:text-destructive transition-colors"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger
+                                    render={
+                                      <button className="p-1 hover:text-destructive transition-colors">
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    }
+                                  />
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        {t.confirmDeleteAbility ||
+                                          "Delete Ability?"}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {`Are you sure you want to delete "${ability.name}"?`}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel
+                                        variant="outline"
+                                        size="default"
+                                      >
+                                        {t.cancel}
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        variant="default"
+                                        size="default"
+                                        onClick={() =>
+                                          setState((prev) => ({
+                                            ...prev,
+                                            abilities: prev.abilities.filter(
+                                              (a) => a.id !== ability.id,
+                                            ),
+                                          }))
+                                        }
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        {t.delete || "Delete"}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                             </div>
                           ) : (
@@ -2418,21 +2507,52 @@ export function Tracker() {
                             </>
                           )}
                           {isEditingInventory && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                              onClick={() =>
-                                setState((prev) => ({
-                                  ...prev,
-                                  inventory: prev.inventory.filter(
-                                    (inv) => inv.id !== item.id,
-                                  ),
-                                }))
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger
+                                render={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {t.confirmDeleteItem || "Delete Item?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {`Are you sure you want to delete "${item.title}"?`}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel
+                                    variant="outline"
+                                    size="default"
+                                  >
+                                    {t.cancel}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    variant="default"
+                                    size="default"
+                                    onClick={() =>
+                                      setState((prev) => ({
+                                        ...prev,
+                                        inventory: prev.inventory.filter(
+                                          (inv) => inv.id !== item.id,
+                                        ),
+                                      }))
+                                    }
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {t.delete || "Delete"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </div>
