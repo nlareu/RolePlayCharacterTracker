@@ -11,7 +11,6 @@ export const translations = {
     tempHp: "Temp HP",
     inspiration: "Inspiration",
     longRest: "Long Rest",
-    shortRest: "Short Rest",
     resetData: "Reset All Data",
     rename: "Rename Character",
     saveChanges: "Save Changes",
@@ -23,9 +22,6 @@ export const translations = {
     confirmLongRest: "Take a Long Rest?",
     confirmLongRestDesc:
       "This will restore all HP, spell slots, and abilities. It will also restore half of your maximum Hit Dice.",
-    confirmShortRest: "Take a Short Rest?",
-    confirmShortRestDesc:
-      "This will restore all abilities that reset on a short rest.",
     spellcasting: "Spellcasting",
     editSlots: "Edit Slots",
     doneEditing: "Done Editing",
@@ -53,7 +49,6 @@ export const translations = {
     description: "Description",
     descriptionPlaceholder: "Enter a description...",
     details: "Details",
-    shortRestAbbr: "Short",
     longRestAbbr: "Long",
     resetOn: "Resets on",
     current: "Current",
@@ -107,7 +102,6 @@ export const translations = {
     tempHp: "PG Temp",
     inspiration: "Inspiración",
     longRest: "Descanso Largo",
-    shortRest: "Descanso Corto",
     resetData: "Reiniciar Datos",
     rename: "Renombrar Personaje",
     saveChanges: "Guardar Cambios",
@@ -119,9 +113,6 @@ export const translations = {
     confirmLongRest: "¿Tomar un Descanso Largo?",
     confirmLongRestDesc:
       "Esto restaurará todos los PG, espacios de conjuros y habilidades. También restaurará la mitad de tus Dados de Golpe máximos.",
-    confirmShortRest: "¿Tomar un Descanso Corto?",
-    confirmShortRestDesc:
-      "Esto restaurará todas las habilidades que se reinician con un descanso corto.",
     spellcasting: "Espacios de Conjuros",
     editSlots: "Editar Espacios",
     doneEditing: "Finalizar",
@@ -149,7 +140,6 @@ export const translations = {
     description: "Descripción",
     descriptionPlaceholder: "Introduce una descripción...",
     details: "Detalles",
-    shortRestAbbr: "Corto",
     longRestAbbr: "Largo",
     resetOn: "Se reinicia con",
     current: "Actual",

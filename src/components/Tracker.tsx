@@ -220,9 +220,6 @@ export function Tracker() {
     );
   }, [activeCharacterId, state.name, state.spellSlots]);
   const [newAbilityTotal, setNewAbilityTotal] = useState(1);
-  const [newAbilityResetOn, setNewAbilityResetOn] = useState<"short" | "long">(
-    "short",
-  );
   const [selectedAbility, setSelectedAbility] = useState<Ability | null>(null);
   const [selectedBuff, setSelectedBuff] = useState<Buff | null>(null);
   const [isEditingBuffs, setIsEditingBuffs] = useState(false);
@@ -464,15 +461,6 @@ export function Tracker() {
       ...prev,
       buffs: prev.buffs.map((b) =>
         b.id === id ? { ...b, active: !b.active } : b,
-      ),
-    }));
-  };
-
-  const resetShortRest = () => {
-    setState((prev) => ({
-      ...prev,
-      abilities: prev.abilities.map((a) =>
-        a.resetOn === "short" ? { ...a, used: 0 } : a,
       ),
     }));
   };
@@ -1825,23 +1813,6 @@ export function Tracker() {
                               }
                             />
                           </div>
-                          <div className="grid gap-2">
-                            <Label>{t.resetType}</Label>
-                            <div className="flex bg-secondary/30 p-1 rounded-md border border-border/50">
-                              <button
-                                onClick={() => setNewAbilityResetOn("short")}
-                                className={`flex-1 text-[10px] py-1 rounded transition-all ${newAbilityResetOn === "short" ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-secondary"}`}
-                              >
-                                {t.shortRestAbbr}
-                              </button>
-                              <button
-                                onClick={() => setNewAbilityResetOn("long")}
-                                className={`flex-1 text-[10px] py-1 rounded transition-all ${newAbilityResetOn === "long" ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-secondary"}`}
-                              >
-                                {t.longRestAbbr}
-                              </button>
-                            </div>
-                          </div>
                         </div>
                       </div>
                       <DialogFooter>
@@ -1864,7 +1835,7 @@ export function Tracker() {
                                               description:
                                                 newAbilityDescription,
                                               total: newAbilityTotal,
-                                              resetOn: newAbilityResetOn,
+                                              resetOn: "long",
                                             }
                                           : a,
                                       ),
@@ -1882,7 +1853,7 @@ export function Tracker() {
                                           description: newAbilityDescription,
                                           total: newAbilityTotal,
                                           used: 0,
-                                          resetOn: newAbilityResetOn,
+                                          resetOn: "long",
                                         },
                                       ],
                                     }));
@@ -1890,7 +1861,6 @@ export function Tracker() {
                                   setNewAbilityName("");
                                   setNewAbilityDescription("");
                                   setNewAbilityTotal(1);
-                                  setNewAbilityResetOn("short");
                                 }
                               }}
                             />
@@ -1901,41 +1871,6 @@ export function Tracker() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  <AlertDialog>
-                    <AlertDialogTrigger
-                      render={
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs gap-1"
-                        />
-                      }
-                    >
-                      <RotateCcw className="h-3 w-3" /> {t.shortRest}
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {t.confirmShortRest}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t.confirmShortRestDesc}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel variant="outline" size="default">
-                          {t.cancel}
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          variant="default"
-                          size="default"
-                          onClick={resetShortRest}
-                        >
-                          {t.shortRest}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
                 </div>
               </div>
 
@@ -1949,9 +1884,7 @@ export function Tracker() {
                     key={ability.id}
                     className="bg-card/40 border-primary/10 overflow-hidden relative"
                   >
-                    <div
-                      className={`h-1 w-full ${ability.resetOn === "short" ? "bg-orange-500" : "bg-purple-500"}`}
-                    />
+                    <div className="h-1 w-full bg-purple-500" />
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1 min-w-0 flex-1">
@@ -1970,10 +1903,7 @@ export function Tracker() {
                             </p>
                           )}
                           <p className="text-[10px] uppercase tracking-tighter text-muted-foreground">
-                            {t.resetOn}{" "}
-                            {ability.resetOn === "short"
-                              ? t.shortRest
-                              : t.longRest}
+                            {t.resetOn} {t.longRest}
                           </p>
                         </div>
 
@@ -1991,7 +1921,6 @@ export function Tracker() {
                                     ability.description || "",
                                   );
                                   setNewAbilityTotal(ability.total);
-                                  setNewAbilityResetOn(ability.resetOn);
                                   setIsAddAbilityOpen(true);
                                 }}
                                 title="Edit"
