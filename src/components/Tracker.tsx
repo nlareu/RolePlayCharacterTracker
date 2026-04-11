@@ -1707,8 +1707,9 @@ export function Tracker() {
                                           ),
                                       }))
                                     }
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
-                                    {t.reset}
+                                    {t.delete || "Delete"}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
