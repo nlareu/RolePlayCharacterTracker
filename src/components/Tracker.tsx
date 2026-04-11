@@ -1091,7 +1091,7 @@ export function Tracker() {
                             </p>
                           )}
                           <p className="text-[10px] uppercase tracking-tighter text-muted-foreground">
-                            {t.resetOn} {ability.resetOn === 'short' ? t.shortRestAbbr : t.longRestAbbr} rest
+                            {t.resetOn} {ability.resetOn === 'short' ? t.shortRest : t.longRest}
                           </p>
                         </div>
                         
