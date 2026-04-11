@@ -187,8 +187,6 @@ export function Tracker() {
     );
   };
 
-  const [isRenameOpen, setIsRenameOpen] = useState(false);
-  const [newName, setNewName] = useState(state.name);
   const [isAddBuffOpen, setIsAddBuffOpen] = useState(false);
   const [newBuffName, setNewBuffName] = useState("");
   const [newBuffDescription, setNewBuffDescription] = useState("");
@@ -213,13 +211,12 @@ export function Tracker() {
 
   // Sync local state when character changes
   useEffect(() => {
-    setNewName(state.name);
     setNewSpellLevel(
       state.spellSlots.length > 0
         ? Math.max(...state.spellSlots.map((s) => s.level)) + 1
         : 1,
     );
-  }, [activeCharacterId, state.name, state.spellSlots]);
+  }, [activeCharacterId, state.spellSlots]);
   const [newAbilityTotal, setNewAbilityTotal] = useState(1);
   const [selectedAbility, setSelectedAbility] = useState<Ability | null>(null);
   const [selectedBuff, setSelectedBuff] = useState<Buff | null>(null);
@@ -542,47 +539,126 @@ export function Tracker() {
                             <Check className="h-3 w-3 ml-auto shrink-0" />
                           )}
                         </Button>
-                        {characters.length > 1 && (
-                          <AlertDialog>
-                            <AlertDialogTrigger
+                        <div className="flex items-center gap-1">
+                          <Dialog>
+                            <DialogTrigger
                               render={
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                  title={t.rename}
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Edit2 className="h-3.5 w-3.5" />
                                 </Button>
                               }
                             />
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {t.confirmDeleteChar}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {t.confirmDeleteCharDesc}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel
-                                  variant="outline"
-                                  size="default"
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>{t.rename}</DialogTitle>
+                                <DialogDescription>
+                                  {t.enterName}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor={`name-${char.id}`}>
+                                    {t.name}
+                                  </Label>
+                                  <Input
+                                    id={`name-${char.id}`}
+                                    defaultValue={char.name}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        const newCharName = (
+                                          e.target as HTMLInputElement
+                                        ).value;
+                                        if (newCharName) {
+                                          setCharacters((prev) =>
+                                            prev.map((c) =>
+                                              c.id === char.id
+                                                ? { ...c, name: newCharName }
+                                                : c,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    }}
+                                    className="col-span-3"
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <DialogClose
+                                  render={
+                                    <Button
+                                      variant="default"
+                                      size="default"
+                                      onClick={(e) => {
+                                        const input = document.getElementById(
+                                          `name-${char.id}`,
+                                        ) as HTMLInputElement;
+                                        const newCharName = input?.value;
+                                        if (newCharName) {
+                                          setCharacters((prev) =>
+                                            prev.map((c) =>
+                                              c.id === char.id
+                                                ? { ...c, name: newCharName }
+                                                : c,
+                                            ),
+                                          );
+                                        }
+                                      }}
+                                    />
+                                  }
                                 >
-                                  {t.cancel}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  variant="default"
-                                  size="default"
-                                  onClick={() => deleteCharacter(char.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {t.deleteCharacter}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
+                                  {t.saveChanges}
+                                </DialogClose>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                          {characters.length > 1 && (
+                            <AlertDialog>
+                              <AlertDialogTrigger
+                                render={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                }
+                              />
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {t.confirmDeleteChar}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t.confirmDeleteCharDesc}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel
+                                    variant="outline"
+                                    size="default"
+                                  >
+                                    {t.cancel}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    variant="default"
+                                    size="default"
+                                    onClick={() => deleteCharacter(char.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {t.deleteCharacter}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -610,62 +686,6 @@ export function Tracker() {
                       ESPAÑOL
                     </button>
                   </div>
-                </div>
-
-                <Separator />
-
-                {/* Rename Character */}
-                <div className="space-y-3">
-                  <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
-                    <DialogTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start gap-2 h-11"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                          {t.rename}
-                        </Button>
-                      }
-                    />
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>{t.rename}</DialogTitle>
-                        <DialogDescription>{t.enterName}</DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="name">{t.name}</Label>
-                          <Input
-                            id="name"
-                            value={newName}
-                            onChange={(e) => setNewName(e.target.value)}
-                            className="col-span-3"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <DialogClose
-                          render={
-                            <Button
-                              variant="default"
-                              size="default"
-                              onClick={() => {
-                                if (newName) {
-                                  setState((prev) => ({
-                                    ...prev,
-                                    name: newName,
-                                  }));
-                                }
-                              }}
-                            />
-                          }
-                        >
-                          {t.saveChanges}
-                        </DialogClose>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
                 </div>
 
                 <Separator />
