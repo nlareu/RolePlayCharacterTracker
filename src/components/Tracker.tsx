@@ -83,7 +83,6 @@ const INITIAL_STATE: CharacterState = {
   id: "default",
   name: "Aventurero",
   hp: { current: 25, max: 25, temp: 0 },
-  inspiration: false,
   deathSaves: { successes: 0, failures: 0 },
   spellSlots: [
     { level: 1, total: 4, used: 0 },
@@ -757,22 +756,6 @@ export function Tracker() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-full border border-border">
-            <div className="flex items-center gap-1.5">
-              <Star
-                className={`h-4 w-4 ${state.inspiration ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`}
-              />
-              <span className="text-[10px] uppercase font-bold tracking-tighter text-muted-foreground">
-                {t.inspiration}
-              </span>
-            </div>
-            <Switch
-              checked={state.inspiration}
-              onCheckedChange={(val) =>
-                setState((prev) => ({ ...prev, inspiration: val }))
-              }
-            />
-          </div>
         </div>
       </header>
 

@@ -56,7 +56,6 @@ export type CharacterState = {
     max: number;
     temp: number;
   };
-  inspiration: boolean;
   deathSaves: DeathSaves;
   spellSlots: SpellSlot[];
   hitDice: HitDice[];
