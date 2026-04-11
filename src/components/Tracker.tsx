@@ -22,6 +22,7 @@ import {
   UserPlus,
   Check,
   Package,
+  Pencil,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -224,6 +225,18 @@ export function Tracker() {
   );
   const [selectedAbility, setSelectedAbility] = useState<Ability | null>(null);
   const [selectedBuff, setSelectedBuff] = useState<Buff | null>(null);
+  const [isEditingBuffs, setIsEditingBuffs] = useState(false);
+  const [isEditingSpells, setIsEditingSpells] = useState(false);
+  const [isEditingInventory, setIsEditingInventory] = useState(false);
+
+  // Edit mode tracking
+  const [editingBuffId, setEditingBuffId] = useState<string | null>(null);
+  const [editingAbilityId, setEditingAbilityId] = useState<string | null>(null);
+  const [editingSpellId, setEditingSpellId] = useState<string | null>(null);
+  const [editingInventoryId, setEditingInventoryId] = useState<string | null>(
+    null,
+  );
+
   const [lang, setLang] = useState<Language>(() => {
     const saved = localStorage.getItem("dnd_tracker_lang");
     return (saved as Language) || "es";
@@ -261,6 +274,111 @@ export function Tracker() {
         setActiveCharacterId(filtered[0].id);
       }
       return filtered;
+    });
+  };
+
+  // Move functions for sorting
+  const moveBuffUp = (id: string) => {
+    setState((prev) => {
+      const index = prev.buffs.findIndex((b) => b.id === id);
+      if (index <= 0) return prev;
+      const newBuffs = [...prev.buffs];
+      [newBuffs[index - 1], newBuffs[index]] = [
+        newBuffs[index],
+        newBuffs[index - 1],
+      ];
+      return { ...prev, buffs: newBuffs };
+    });
+  };
+
+  const moveBuffDown = (id: string) => {
+    setState((prev) => {
+      const index = prev.buffs.findIndex((b) => b.id === id);
+      if (index >= prev.buffs.length - 1) return prev;
+      const newBuffs = [...prev.buffs];
+      [newBuffs[index + 1], newBuffs[index]] = [
+        newBuffs[index],
+        newBuffs[index + 1],
+      ];
+      return { ...prev, buffs: newBuffs };
+    });
+  };
+
+  const moveAbilityUp = (id: string) => {
+    setState((prev) => {
+      const index = prev.abilities.findIndex((a) => a.id === id);
+      if (index <= 0) return prev;
+      const newAbilities = [...prev.abilities];
+      [newAbilities[index - 1], newAbilities[index]] = [
+        newAbilities[index],
+        newAbilities[index - 1],
+      ];
+      return { ...prev, abilities: newAbilities };
+    });
+  };
+
+  const moveAbilityDown = (id: string) => {
+    setState((prev) => {
+      const index = prev.abilities.findIndex((a) => a.id === id);
+      if (index >= prev.abilities.length - 1) return prev;
+      const newAbilities = [...prev.abilities];
+      [newAbilities[index + 1], newAbilities[index]] = [
+        newAbilities[index],
+        newAbilities[index + 1],
+      ];
+      return { ...prev, abilities: newAbilities };
+    });
+  };
+
+  const moveSpellUp = (id: string) => {
+    setState((prev) => {
+      const index = prev.preparedSpells.findIndex((s) => s.id === id);
+      if (index <= 0) return prev;
+      const newSpells = [...prev.preparedSpells];
+      [newSpells[index - 1], newSpells[index]] = [
+        newSpells[index],
+        newSpells[index - 1],
+      ];
+      return { ...prev, preparedSpells: newSpells };
+    });
+  };
+
+  const moveSpellDown = (id: string) => {
+    setState((prev) => {
+      const index = prev.preparedSpells.findIndex((s) => s.id === id);
+      if (index >= prev.preparedSpells.length - 1) return prev;
+      const newSpells = [...prev.preparedSpells];
+      [newSpells[index + 1], newSpells[index]] = [
+        newSpells[index],
+        newSpells[index + 1],
+      ];
+      return { ...prev, preparedSpells: newSpells };
+    });
+  };
+
+  const moveInventoryUp = (id: string) => {
+    setState((prev) => {
+      const index = prev.inventory.findIndex((i) => i.id === id);
+      if (index <= 0) return prev;
+      const newInventory = [...prev.inventory];
+      [newInventory[index - 1], newInventory[index]] = [
+        newInventory[index],
+        newInventory[index - 1],
+      ];
+      return { ...prev, inventory: newInventory };
+    });
+  };
+
+  const moveInventoryDown = (id: string) => {
+    setState((prev) => {
+      const index = prev.inventory.findIndex((i) => i.id === id);
+      if (index >= prev.inventory.length - 1) return prev;
+      const newInventory = [...prev.inventory];
+      [newInventory[index + 1], newInventory[index]] = [
+        newInventory[index],
+        newInventory[index + 1],
+      ];
+      return { ...prev, inventory: newInventory };
     });
   };
 
@@ -872,9 +990,126 @@ export function Tracker() {
 
               <Card className="mt-4 border-border bg-card/30">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">
-                    {t.buffs}
-                  </CardTitle>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">
+                      {t.buffs}
+                    </CardTitle>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsEditingBuffs(!isEditingBuffs)}
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        title={isEditingBuffs ? t.doneEditing : "Edit"}
+                      >
+                        {isEditingBuffs ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Pencil className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Dialog
+                        open={isAddBuffOpen}
+                        onOpenChange={setIsAddBuffOpen}
+                      >
+                        <DialogTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              title={t.addBuff}
+                            />
+                          }
+                        >
+                          <Plus className="h-4 w-4" />
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>
+                              {editingBuffId
+                                ? t.editBuff || "Edit Buff"
+                                : t.addBuff}
+                            </DialogTitle>
+                            <DialogDescription>{t.buffDesc}</DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="buff-name">{t.name}</Label>
+                              <Input
+                                id="buff-name"
+                                value={newBuffName}
+                                onChange={(e) => setNewBuffName(e.target.value)}
+                                placeholder="e.g. Bless, Haste"
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="buff-description">
+                                {t.description}
+                              </Label>
+                              <Input
+                                id="buff-description"
+                                value={newBuffDescription}
+                                onChange={(e) =>
+                                  setNewBuffDescription(e.target.value)
+                                }
+                                placeholder={t.descriptionPlaceholder}
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <DialogClose
+                              render={
+                                <Button
+                                  variant="default"
+                                  size="default"
+                                  onClick={() => {
+                                    if (newBuffName) {
+                                      if (editingBuffId) {
+                                        // Update existing buff
+                                        setState((prev) => ({
+                                          ...prev,
+                                          buffs: prev.buffs.map((b) =>
+                                            b.id === editingBuffId
+                                              ? {
+                                                  ...b,
+                                                  name: newBuffName,
+                                                  description:
+                                                    newBuffDescription,
+                                                }
+                                              : b,
+                                          ),
+                                        }));
+                                        setEditingBuffId(null);
+                                      } else {
+                                        // Add new buff
+                                        setState((prev) => ({
+                                          ...prev,
+                                          buffs: [
+                                            ...prev.buffs,
+                                            {
+                                              id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                              name: newBuffName,
+                                              description: newBuffDescription,
+                                              active: true,
+                                            },
+                                          ],
+                                        }));
+                                      }
+                                      setNewBuffName("");
+                                      setNewBuffDescription("");
+                                    }
+                                  }}
+                                />
+                              }
+                            >
+                              {editingBuffId ? t.saveChanges : t.addBuff}
+                            </DialogClose>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {state.buffs.length === 0 ? (
@@ -882,7 +1117,7 @@ export function Tracker() {
                       {t.noBuffs}
                     </p>
                   ) : (
-                    state.buffs.map((buff) => (
+                    state.buffs.map((buff, index) => (
                       <div
                         key={buff.id}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${buff.active ? "bg-secondary/30 border-border/50" : "bg-muted/20 border-transparent opacity-60"}`}
@@ -908,113 +1143,80 @@ export function Tracker() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => toggleBuff(buff.id)}
-                            className={`
-                              h-7 w-7 rounded-md border-2 transition-all duration-200 flex items-center justify-center
-                              ${
-                                !buff.active
-                                  ? "bg-muted border-muted-foreground/30 text-muted-foreground"
-                                  : "bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]"
+                          {isEditingBuffs ? (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  setEditingBuffId(buff.id);
+                                  setNewBuffName(buff.name);
+                                  setNewBuffDescription(buff.description);
+                                  setIsAddBuffOpen(true);
+                                }}
+                                title="Edit"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => moveBuffUp(buff.id)}
+                                disabled={index === 0}
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => moveBuffDown(buff.id)}
+                                disabled={index === state.buffs.length - 1}
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => toggleBuff(buff.id)}
+                              className={`
+                                h-7 w-7 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                                ${
+                                  !buff.active
+                                    ? "bg-muted border-muted-foreground/30 text-muted-foreground"
+                                    : "bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]"
+                                }
+                                hover:scale-110 active:scale-95
+                              `}
+                            >
+                              {!buff.active ? null : (
+                                <div className="h-2 w-2 rounded-full bg-primary" />
+                              )}
+                            </button>
+                          )}
+                          {isEditingBuffs && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={() =>
+                                setState((prev) => ({
+                                  ...prev,
+                                  buffs: prev.buffs.filter(
+                                    (b) => b.id !== buff.id,
+                                  ),
+                                }))
                               }
-                              hover:scale-110 active:scale-95
-                            `}
-                          >
-                            {!buff.active ? null : (
-                              <div className="h-2 w-2 rounded-full bg-primary" />
-                            )}
-                          </button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                            onClick={() =>
-                              setState((prev) => ({
-                                ...prev,
-                                buffs: prev.buffs.filter(
-                                  (b) => b.id !== buff.id,
-                                ),
-                              }))
-                            }
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))
                   )}
-                  <Dialog open={isAddBuffOpen} onOpenChange={setIsAddBuffOpen}>
-                    <DialogTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          className="w-full border-dashed"
-                        />
-                      }
-                    >
-                      <Plus className="h-4 w-4 mr-2" /> {t.addBuff}
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>{t.addBuff}</DialogTitle>
-                        <DialogDescription>{t.buffDesc}</DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="buff-name">{t.name}</Label>
-                          <Input
-                            id="buff-name"
-                            value={newBuffName}
-                            onChange={(e) => setNewBuffName(e.target.value)}
-                            placeholder="e.g. Bless, Haste"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="buff-description">
-                            {t.description}
-                          </Label>
-                          <Input
-                            id="buff-description"
-                            value={newBuffDescription}
-                            onChange={(e) =>
-                              setNewBuffDescription(e.target.value)
-                            }
-                            placeholder={t.descriptionPlaceholder}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <DialogClose
-                          render={
-                            <Button
-                              variant="default"
-                              size="default"
-                              onClick={() => {
-                                if (newBuffName) {
-                                  setState((prev) => ({
-                                    ...prev,
-                                    buffs: [
-                                      ...prev.buffs,
-                                      {
-                                        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                        name: newBuffName,
-                                        description: newBuffDescription,
-                                        active: true,
-                                      },
-                                    ],
-                                  }));
-                                  setNewBuffName("");
-                                  setNewBuffDescription("");
-                                }
-                              }}
-                            />
-                          }
-                        >
-                          {t.addBuff}
-                        </DialogClose>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
                 </CardContent>
               </Card>
             </motion.div>
@@ -1033,12 +1235,16 @@ export function Tracker() {
                 </h3>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={() => setIsEditingSpellSlots(!isEditingSpellSlots)}
-                  className={`h-8 text-xs gap-1 ${isEditingSpellSlots ? "text-primary bg-primary/10" : ""}`}
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  title={isEditingSpellSlots ? t.doneEditing : t.editSlots}
                 >
-                  <Settings2 className="h-3 w-3" />{" "}
-                  {isEditingSpellSlots ? t.doneEditing : t.editSlots}
+                  {isEditingSpellSlots ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Pencil className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
 
@@ -1169,69 +1375,106 @@ export function Tracker() {
 
               <Separator className="my-6" />
 
-              <div className="flex items-center justify-between px-1">
+              <div className="flex items-center justify-between px-1 mb-3">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                   {t.alwaysPreparedSpells}
                 </h3>
-                <Dialog open={isAddSpellOpen} onOpenChange={setIsAddSpellOpen}>
-                  <DialogTrigger
-                    render={
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        title={t.addSpell}
-                      />
-                    }
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => setIsEditingSpells(!isEditingSpells)}
+                    title={isEditingSpells ? t.doneEditing : "Edit"}
                   >
-                    <Plus className="h-4 w-4" />
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>{t.addSpell}</DialogTitle>
-                      <DialogDescription>{t.abilityDesc}</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="spell-name">{t.name}</Label>
-                        <Input
-                          id="spell-name"
-                          value={newSpellName}
-                          onChange={(e) => setNewSpellName(e.target.value)}
-                          placeholder="e.g. Fire Bolt, Cure Wounds"
+                    {isEditingSpells ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Pencil className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Dialog
+                    open={isAddSpellOpen}
+                    onOpenChange={setIsAddSpellOpen}
+                  >
+                    <DialogTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          title={t.addSpell}
                         />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <DialogClose
-                        render={
-                          <Button
-                            variant="default"
-                            size="default"
-                            onClick={() => {
-                              if (newSpellName) {
-                                setState((prev) => ({
-                                  ...prev,
-                                  preparedSpells: [
-                                    ...prev.preparedSpells,
-                                    {
-                                      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                      name: newSpellName,
-                                      used: false,
-                                    },
-                                  ],
-                                }));
-                                setNewSpellName("");
-                              }
-                            }}
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingSpellId
+                            ? t.editSpell || "Edit Spell"
+                            : t.addSpell}
+                        </DialogTitle>
+                        <DialogDescription>{t.abilityDesc}</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="spell-name">{t.name}</Label>
+                          <Input
+                            id="spell-name"
+                            value={newSpellName}
+                            onChange={(e) => setNewSpellName(e.target.value)}
+                            placeholder="e.g. Fire Bolt, Cure Wounds"
                           />
-                        }
-                      >
-                        {t.addSpell}
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose
+                          render={
+                            <Button
+                              variant="default"
+                              size="default"
+                              onClick={() => {
+                                if (newSpellName) {
+                                  if (editingSpellId) {
+                                    // Update existing spell
+                                    setState((prev) => ({
+                                      ...prev,
+                                      preparedSpells: prev.preparedSpells.map(
+                                        (s) =>
+                                          s.id === editingSpellId
+                                            ? { ...s, name: newSpellName }
+                                            : s,
+                                      ),
+                                    }));
+                                    setEditingSpellId(null);
+                                  } else {
+                                    // Add new spell
+                                    setState((prev) => ({
+                                      ...prev,
+                                      preparedSpells: [
+                                        ...prev.preparedSpells,
+                                        {
+                                          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                          name: newSpellName,
+                                          used: false,
+                                        },
+                                      ],
+                                    }));
+                                  }
+                                  setNewSpellName("");
+                                }
+                              }}
+                            />
+                          }
+                        >
+                          {editingSpellId ? t.saveChanges : t.addSpell}
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -1240,7 +1483,7 @@ export function Tracker() {
                     {t.noSpells}
                   </p>
                 ) : (
-                  state.preparedSpells.map((spell) => (
+                  state.preparedSpells.map((spell, index) => (
                     <Card
                       key={spell.id}
                       className="bg-card/40 border-primary/10 group overflow-hidden"
@@ -1261,71 +1504,111 @@ export function Tracker() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => togglePreparedSpell(spell.id)}
-                            className={`
-                              h-8 w-8 rounded-md border-2 transition-all duration-200 flex items-center justify-center
-                              ${
-                                spell.used
-                                  ? "bg-muted border-muted-foreground/30 text-muted-foreground"
-                                  : "bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]"
-                              }
-                              hover:scale-110 active:scale-95
-                            `}
-                          >
-                            {spell.used ? (
-                              <Minus className="h-4 w-4" />
-                            ) : (
-                              <Zap className="h-4 w-4 fill-primary" />
-                            )}
-                          </button>
-
-                          <AlertDialog>
-                            <AlertDialogTrigger
-                              render={
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                />
-                              }
+                          {isEditingSpells ? (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  setEditingSpellId(spell.id);
+                                  setNewSpellName(spell.name);
+                                  setIsAddSpellOpen(true);
+                                }}
+                                title="Edit"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => moveSpellUp(spell.id)}
+                                disabled={index === 0}
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => moveSpellDown(spell.id)}
+                                disabled={
+                                  index === state.preparedSpells.length - 1
+                                }
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => togglePreparedSpell(spell.id)}
+                              className={`
+                                h-8 w-8 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                                ${
+                                  spell.used
+                                    ? "bg-muted border-muted-foreground/30 text-muted-foreground"
+                                    : "bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]"
+                                }
+                                hover:scale-110 active:scale-95
+                              `}
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {t.confirmDeleteSpell}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {t.confirmDeleteSpellDesc}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel
-                                  variant="outline"
-                                  size="default"
-                                >
-                                  {t.cancel}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  variant="default"
-                                  size="default"
-                                  onClick={() =>
-                                    setState((prev) => ({
-                                      ...prev,
-                                      preparedSpells:
-                                        prev.preparedSpells.filter(
-                                          (s) => s.id !== spell.id,
-                                        ),
-                                    }))
-                                  }
-                                >
-                                  {t.reset}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                              {spell.used ? (
+                                <Minus className="h-4 w-4" />
+                              ) : (
+                                <Zap className="h-4 w-4 fill-primary" />
+                              )}
+                            </button>
+                          )}
+
+                          {isEditingSpells && (
+                            <AlertDialog>
+                              <AlertDialogTrigger
+                                render={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  />
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {t.confirmDeleteSpell}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t.confirmDeleteSpellDesc}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel
+                                    variant="outline"
+                                    size="default"
+                                  >
+                                    {t.cancel}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    variant="default"
+                                    size="default"
+                                    onClick={() =>
+                                      setState((prev) => ({
+                                        ...prev,
+                                        preparedSpells:
+                                          prev.preparedSpells.filter(
+                                            (s) => s.id !== spell.id,
+                                          ),
+                                      }))
+                                    }
+                                  >
+                                    {t.reset}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -1350,12 +1633,16 @@ export function Tracker() {
                     </CardTitle>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       onClick={() => setIsEditingHitDice(!isEditingHitDice)}
-                      className={`h-8 text-xs gap-1 ${isEditingHitDice ? "text-primary bg-primary/10" : ""}`}
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      title={isEditingHitDice ? t.doneEditing : t.editHitDice}
                     >
-                      <Settings2 className="h-3 w-3" />{" "}
-                      {isEditingHitDice ? t.doneEditing : t.editHitDice}
+                      {isEditingHitDice ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Pencil className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </CardHeader>
@@ -1461,16 +1748,159 @@ export function Tracker() {
                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                   {t.features}
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => setIsEditingAbilities(!isEditingAbilities)}
-                    className={`h-8 text-xs gap-1 ${isEditingAbilities ? "text-primary bg-primary/10" : ""}`}
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    title={isEditingAbilities ? t.doneEditing : t.editAbilities}
                   >
-                    <Settings2 className="h-3 w-3" />{" "}
-                    {isEditingAbilities ? t.doneEditing : t.editAbilities}
+                    {isEditingAbilities ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Pencil className="h-4 w-4" />
+                    )}
                   </Button>
+                  <Dialog
+                    open={isAddAbilityOpen}
+                    onOpenChange={setIsAddAbilityOpen}
+                  >
+                    <DialogTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          title={t.addAbility}
+                        />
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingAbilityId
+                            ? t.editAbility || "Edit Ability/Feature"
+                            : t.addAbility}
+                        </DialogTitle>
+                        <DialogDescription>{t.abilityDesc}</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="ability-name">{t.name}</Label>
+                          <Input
+                            id="ability-name"
+                            value={newAbilityName}
+                            onChange={(e) => setNewAbilityName(e.target.value)}
+                            placeholder="e.g. Rage, Ki Points"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="ability-description">
+                            {t.description}
+                          </Label>
+                          <Input
+                            id="ability-description"
+                            value={newAbilityDescription}
+                            onChange={(e) =>
+                              setNewAbilityDescription(e.target.value)
+                            }
+                            placeholder={t.descriptionPlaceholder}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="ability-total">{t.uses}</Label>
+                            <Input
+                              id="ability-total"
+                              type="number"
+                              min="1"
+                              value={newAbilityTotal}
+                              onChange={(e) =>
+                                setNewAbilityTotal(
+                                  parseInt(e.target.value) || 1,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>{t.resetType}</Label>
+                            <div className="flex bg-secondary/30 p-1 rounded-md border border-border/50">
+                              <button
+                                onClick={() => setNewAbilityResetOn("short")}
+                                className={`flex-1 text-[10px] py-1 rounded transition-all ${newAbilityResetOn === "short" ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-secondary"}`}
+                              >
+                                {t.shortRestAbbr}
+                              </button>
+                              <button
+                                onClick={() => setNewAbilityResetOn("long")}
+                                className={`flex-1 text-[10px] py-1 rounded transition-all ${newAbilityResetOn === "long" ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-secondary"}`}
+                              >
+                                {t.longRestAbbr}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose
+                          render={
+                            <Button
+                              variant="default"
+                              size="default"
+                              onClick={() => {
+                                if (newAbilityName) {
+                                  if (editingAbilityId) {
+                                    // Update existing ability
+                                    setState((prev) => ({
+                                      ...prev,
+                                      abilities: prev.abilities.map((a) =>
+                                        a.id === editingAbilityId
+                                          ? {
+                                              ...a,
+                                              name: newAbilityName,
+                                              description:
+                                                newAbilityDescription,
+                                              total: newAbilityTotal,
+                                              resetOn: newAbilityResetOn,
+                                            }
+                                          : a,
+                                      ),
+                                    }));
+                                    setEditingAbilityId(null);
+                                  } else {
+                                    // Add new ability
+                                    setState((prev) => ({
+                                      ...prev,
+                                      abilities: [
+                                        ...prev.abilities,
+                                        {
+                                          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                          name: newAbilityName,
+                                          description: newAbilityDescription,
+                                          total: newAbilityTotal,
+                                          used: 0,
+                                          resetOn: newAbilityResetOn,
+                                        },
+                                      ],
+                                    }));
+                                  }
+                                  setNewAbilityName("");
+                                  setNewAbilityDescription("");
+                                  setNewAbilityTotal(1);
+                                  setNewAbilityResetOn("short");
+                                }
+                              }}
+                            />
+                          }
+                        >
+                          {editingAbilityId ? t.saveChanges : t.addAbility}
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                   <AlertDialog>
                     <AlertDialogTrigger
                       render={
@@ -1514,7 +1944,7 @@ export function Tracker() {
                   {t.noAbilities}
                 </p>
               ) : (
-                state.abilities.map((ability) => (
+                state.abilities.map((ability, index) => (
                   <Card
                     key={ability.id}
                     className="bg-card/40 border-primary/10 overflow-hidden relative"
@@ -1550,6 +1980,46 @@ export function Tracker() {
                         <div className="flex items-center gap-3">
                           {isEditingAbilities ? (
                             <div className="flex items-center gap-2 bg-secondary/30 rounded-md px-1 py-0.5 border border-border/50">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary p-0"
+                                onClick={() => {
+                                  setEditingAbilityId(ability.id);
+                                  setNewAbilityName(ability.name);
+                                  setNewAbilityDescription(
+                                    ability.description || "",
+                                  );
+                                  setNewAbilityTotal(ability.total);
+                                  setNewAbilityResetOn(ability.resetOn);
+                                  setIsAddAbilityOpen(true);
+                                }}
+                                title="Edit"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary p-0"
+                                onClick={() => moveAbilityUp(ability.id)}
+                                disabled={index === 0}
+                              >
+                                <ChevronUp className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary p-0"
+                                onClick={() => moveAbilityDown(ability.id)}
+                                disabled={index === state.abilities.length - 1}
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                              <Separator
+                                orientation="vertical"
+                                className="h-3 mx-0.5"
+                              />
                               <button
                                 onClick={() =>
                                   setState((prev) => ({
@@ -1592,21 +2062,23 @@ export function Tracker() {
                               </button>
                               <Separator
                                 orientation="vertical"
-                                className="h-3 mx-1"
+                                className="h-3 mx-0.5"
                               />
-                              <button
-                                onClick={() =>
-                                  setState((prev) => ({
-                                    ...prev,
-                                    abilities: prev.abilities.filter(
-                                      (a) => a.id !== ability.id,
-                                    ),
-                                  }))
-                                }
-                                className="p-1 hover:text-destructive transition-colors"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
+                              {isEditingAbilities && (
+                                <button
+                                  onClick={() =>
+                                    setState((prev) => ({
+                                      ...prev,
+                                      abilities: prev.abilities.filter(
+                                        (a) => a.id !== ability.id,
+                                      ),
+                                    }))
+                                  }
+                                  className="p-1 hover:text-destructive transition-colors"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
                             </div>
                           ) : (
                             <div className="flex items-center gap-1.5">
@@ -1639,117 +2111,6 @@ export function Tracker() {
                   </Card>
                 ))
               )}
-
-              <Dialog
-                open={isAddAbilityOpen}
-                onOpenChange={setIsAddAbilityOpen}
-              >
-                <DialogTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      className="w-full border-dashed"
-                    />
-                  }
-                >
-                  <Plus className="h-4 w-4 mr-2" /> {t.addAbility}
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>{t.addAbility}</DialogTitle>
-                    <DialogDescription>{t.abilityDesc}</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="ability-name">{t.name}</Label>
-                      <Input
-                        id="ability-name"
-                        value={newAbilityName}
-                        onChange={(e) => setNewAbilityName(e.target.value)}
-                        placeholder="e.g. Rage, Ki Points"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="ability-description">
-                        {t.description}
-                      </Label>
-                      <Input
-                        id="ability-description"
-                        value={newAbilityDescription}
-                        onChange={(e) =>
-                          setNewAbilityDescription(e.target.value)
-                        }
-                        placeholder={t.descriptionPlaceholder}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="ability-total">{t.uses}</Label>
-                        <Input
-                          id="ability-total"
-                          type="number"
-                          min="1"
-                          value={newAbilityTotal}
-                          onChange={(e) =>
-                            setNewAbilityTotal(parseInt(e.target.value) || 1)
-                          }
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>{t.resetType}</Label>
-                        <div className="flex bg-secondary/30 p-1 rounded-md border border-border/50">
-                          <button
-                            onClick={() => setNewAbilityResetOn("short")}
-                            className={`flex-1 text-[10px] py-1 rounded transition-all ${newAbilityResetOn === "short" ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-secondary"}`}
-                          >
-                            {t.shortRestAbbr}
-                          </button>
-                          <button
-                            onClick={() => setNewAbilityResetOn("long")}
-                            className={`flex-1 text-[10px] py-1 rounded transition-all ${newAbilityResetOn === "long" ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-secondary"}`}
-                          >
-                            {t.longRestAbbr}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <DialogClose
-                      render={
-                        <Button
-                          variant="default"
-                          size="default"
-                          onClick={() => {
-                            if (newAbilityName) {
-                              setState((prev) => ({
-                                ...prev,
-                                abilities: [
-                                  ...prev.abilities,
-                                  {
-                                    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                    name: newAbilityName,
-                                    description: newAbilityDescription,
-                                    total: newAbilityTotal,
-                                    used: 0,
-                                    resetOn: newAbilityResetOn,
-                                  },
-                                ],
-                              }));
-                              setNewAbilityName("");
-                              setNewAbilityDescription("");
-                              setNewAbilityTotal(1);
-                              setNewAbilityResetOn("short");
-                            }
-                          }}
-                        />
-                      }
-                    >
-                      {t.addAbility}
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
 
               <Dialog
                 open={!!selectedAbility}
@@ -1805,9 +2166,150 @@ export function Tracker() {
             >
               <Card className="mt-4 border-border bg-card/30">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">
-                    {t.inventory}
-                  </CardTitle>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">
+                      {t.inventory}
+                    </CardTitle>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          setIsEditingInventory(!isEditingInventory)
+                        }
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        title={isEditingInventory ? t.doneEditing : "Edit"}
+                      >
+                        {isEditingInventory ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Pencil className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Dialog
+                        open={isAddInventoryOpen}
+                        onOpenChange={setIsAddInventoryOpen}
+                      >
+                        <DialogTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              title={t.addItem}
+                            />
+                          }
+                        >
+                          <Plus className="h-4 w-4" />
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>
+                              {editingInventoryId
+                                ? t.editItem || "Edit Item"
+                                : t.addItem}
+                            </DialogTitle>
+                            <DialogDescription>
+                              {t.addItemDesc}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="inv-title">{t.itemTitle}</Label>
+                              <Input
+                                id="inv-title"
+                                value={newInventoryTitle}
+                                onChange={(e) =>
+                                  setNewInventoryTitle(e.target.value)
+                                }
+                                placeholder="e.g. Sword, Gold Coin"
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="inv-description">
+                                {t.description}
+                              </Label>
+                              <Input
+                                id="inv-description"
+                                value={newInventoryDescription}
+                                onChange={(e) =>
+                                  setNewInventoryDescription(e.target.value)
+                                }
+                                placeholder={t.descriptionPlaceholder}
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="inv-count">{t.count}</Label>
+                              <Input
+                                id="inv-count"
+                                type="number"
+                                min="1"
+                                value={newInventoryCount}
+                                onChange={(e) =>
+                                  setNewInventoryCount(
+                                    parseInt(e.target.value) || 1,
+                                  )
+                                }
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <DialogClose
+                              render={
+                                <Button
+                                  variant="default"
+                                  size="default"
+                                  onClick={() => {
+                                    if (newInventoryTitle) {
+                                      if (editingInventoryId) {
+                                        // Update existing item
+                                        setState((prev) => ({
+                                          ...prev,
+                                          inventory: prev.inventory.map(
+                                            (inv) =>
+                                              inv.id === editingInventoryId
+                                                ? {
+                                                    ...inv,
+                                                    title: newInventoryTitle,
+                                                    description:
+                                                      newInventoryDescription,
+                                                    count: newInventoryCount,
+                                                  }
+                                                : inv,
+                                          ),
+                                        }));
+                                        setEditingInventoryId(null);
+                                      } else {
+                                        // Add new item
+                                        setState((prev) => ({
+                                          ...prev,
+                                          inventory: [
+                                            ...prev.inventory,
+                                            {
+                                              id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                              title: newInventoryTitle,
+                                              description:
+                                                newInventoryDescription,
+                                              count: newInventoryCount,
+                                            },
+                                          ],
+                                        }));
+                                      }
+                                      setNewInventoryTitle("");
+                                      setNewInventoryDescription("");
+                                      setNewInventoryCount(1);
+                                    }
+                                  }}
+                                />
+                              }
+                            >
+                              {editingInventoryId ? t.saveChanges : t.addItem}
+                            </DialogClose>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {state.inventory.length === 0 ? (
@@ -1815,7 +2317,7 @@ export function Tracker() {
                       {t.noItems}
                     </p>
                   ) : (
-                    state.inventory.map((item) => (
+                    state.inventory.map((item, index) => (
                       <div
                         key={item.id}
                         className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/30"
@@ -1829,157 +2331,107 @@ export function Tracker() {
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              setState((prev) => ({
-                                ...prev,
-                                inventory: prev.inventory.map((inv) =>
-                                  inv.id === item.id
-                                    ? {
-                                        ...inv,
-                                        count: Math.max(0, inv.count - 1),
-                                      }
-                                    : inv,
-                                ),
-                              }))
-                            }
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="text-sm font-mono font-bold w-6 text-center">
-                            {item.count}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              setState((prev) => ({
-                                ...prev,
-                                inventory: prev.inventory.map((inv) =>
-                                  inv.id === item.id
-                                    ? { ...inv, count: inv.count + 1 }
-                                    : inv,
-                                ),
-                              }))
-                            }
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                            onClick={() =>
-                              setState((prev) => ({
-                                ...prev,
-                                inventory: prev.inventory.filter(
-                                  (inv) => inv.id !== item.id,
-                                ),
-                              }))
-                            }
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {isEditingInventory ? (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  setEditingInventoryId(item.id);
+                                  setNewInventoryTitle(item.title);
+                                  setNewInventoryDescription(item.description);
+                                  setNewInventoryCount(item.count);
+                                  setIsAddInventoryOpen(true);
+                                }}
+                                title="Edit"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => moveInventoryUp(item.id)}
+                                disabled={index === 0}
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => moveInventoryDown(item.id)}
+                                disabled={index === state.inventory.length - 1}
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() =>
+                                  setState((prev) => ({
+                                    ...prev,
+                                    inventory: prev.inventory.map((inv) =>
+                                      inv.id === item.id
+                                        ? {
+                                            ...inv,
+                                            count: Math.max(0, inv.count - 1),
+                                          }
+                                        : inv,
+                                    ),
+                                  }))
+                                }
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="text-sm font-mono font-bold w-6 text-center">
+                                {item.count}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() =>
+                                  setState((prev) => ({
+                                    ...prev,
+                                    inventory: prev.inventory.map((inv) =>
+                                      inv.id === item.id
+                                        ? { ...inv, count: inv.count + 1 }
+                                        : inv,
+                                    ),
+                                  }))
+                                }
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                          {isEditingInventory && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={() =>
+                                setState((prev) => ({
+                                  ...prev,
+                                  inventory: prev.inventory.filter(
+                                    (inv) => inv.id !== item.id,
+                                  ),
+                                }))
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))
                   )}
-                  <Dialog
-                    open={isAddInventoryOpen}
-                    onOpenChange={setIsAddInventoryOpen}
-                  >
-                    <DialogTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          className="w-full border-dashed"
-                        />
-                      }
-                    >
-                      <Plus className="h-4 w-4 mr-2" /> {t.addItem}
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>{t.addItem}</DialogTitle>
-                        <DialogDescription>{t.addItemDesc}</DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="inv-title">{t.itemTitle}</Label>
-                          <Input
-                            id="inv-title"
-                            value={newInventoryTitle}
-                            onChange={(e) =>
-                              setNewInventoryTitle(e.target.value)
-                            }
-                            placeholder="e.g. Sword, Gold Coin"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="inv-description">
-                            {t.description}
-                          </Label>
-                          <Input
-                            id="inv-description"
-                            value={newInventoryDescription}
-                            onChange={(e) =>
-                              setNewInventoryDescription(e.target.value)
-                            }
-                            placeholder="e.g. +1 Longsword, 100 gp"
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="inv-count">{t.itemCount}</Label>
-                          <Input
-                            id="inv-count"
-                            type="number"
-                            min="1"
-                            value={newInventoryCount}
-                            onChange={(e) =>
-                              setNewInventoryCount(
-                                Math.max(1, parseInt(e.target.value) || 1),
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <DialogClose
-                          render={
-                            <Button
-                              variant="default"
-                              size="default"
-                              onClick={() => {
-                                if (newInventoryTitle) {
-                                  setState((prev) => ({
-                                    ...prev,
-                                    inventory: [
-                                      ...prev.inventory,
-                                      {
-                                        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                        title: newInventoryTitle,
-                                        description: newInventoryDescription,
-                                        count: newInventoryCount,
-                                      },
-                                    ],
-                                  }));
-                                  setNewInventoryTitle("");
-                                  setNewInventoryDescription("");
-                                  setNewInventoryCount(1);
-                                }
-                              }}
-                            />
-                          }
-                        >
-                          {t.addItem}
-                        </DialogClose>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
                 </CardContent>
               </Card>
             </motion.div>
