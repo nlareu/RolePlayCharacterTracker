@@ -510,7 +510,7 @@ export function Tracker() {
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0 max-w-[70%]">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <Sheet>
             <SheetTrigger
               render={
