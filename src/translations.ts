@@ -1,4 +1,4 @@
-export type Language = 'en' | 'es';
+export type Language = "en" | "es";
 
 export const translations = {
   en: {
@@ -18,11 +18,14 @@ export const translations = {
     cancel: "Cancel",
     reset: "Reset",
     confirmReset: "Reset All Data?",
-    confirmResetDesc: "This will reset all character data to their initial state. This action cannot be undone.",
+    confirmResetDesc:
+      "This will reset all character data to their initial state. This action cannot be undone.",
     confirmLongRest: "Take a Long Rest?",
-    confirmLongRestDesc: "This will restore all HP, spell slots, and abilities. It will also restore half of your maximum Hit Dice.",
+    confirmLongRestDesc:
+      "This will restore all HP, spell slots, and abilities. It will also restore half of your maximum Hit Dice.",
     confirmShortRest: "Take a Short Rest?",
-    confirmShortRestDesc: "This will restore all abilities that reset on a short rest.",
+    confirmShortRestDesc:
+      "This will restore all abilities that reset on a short rest.",
     spellcasting: "Spellcasting",
     editSlots: "Edit Slots",
     doneEditing: "Done Editing",
@@ -70,16 +73,24 @@ export const translations = {
     cast: "Cast",
     noSpells: "No spells added yet",
     confirmDeleteSpell: "Delete Spell?",
-    confirmDeleteSpellDesc: "Are you sure you want to remove this spell from your always prepared list?",
+    confirmDeleteSpellDesc:
+      "Are you sure you want to remove this spell from your always prepared list?",
     characters: "Characters",
     newCharacter: "New Character",
     deleteCharacter: "Delete Character",
     confirmDeleteChar: "Delete Character?",
-    confirmDeleteCharDesc: "This will permanently delete this character and all their data.",
+    confirmDeleteCharDesc:
+      "This will permanently delete this character and all their data.",
     selectCharacter: "Select Character",
     noCharacters: "No characters found",
     active: "Active",
-    amount: "Amt"
+    amount: "Amt",
+    inventory: "Inventory",
+    noItems: "No items in inventory",
+    addItem: "Add Item",
+    itemTitle: "Title",
+    itemCount: "Count",
+    addItemDesc: "Add a new item to your inventory",
   },
   es: {
     characterTracker: "Seguimiento de Personaje",
@@ -98,11 +109,14 @@ export const translations = {
     cancel: "Cancelar",
     reset: "Reiniciar",
     confirmReset: "¿Reiniciar todos los datos?",
-    confirmResetDesc: "Esto restablecerá todos los datos del personaje a su estado inicial. Esta acción no se puede deshacer.",
+    confirmResetDesc:
+      "Esto restablecerá todos los datos del personaje a su estado inicial. Esta acción no se puede deshacer.",
     confirmLongRest: "¿Tomar un Descanso Largo?",
-    confirmLongRestDesc: "Esto restaurará todos los PG, espacios de conjuros y habilidades. También restaurará la mitad de tus Dados de Golpe máximos.",
+    confirmLongRestDesc:
+      "Esto restaurará todos los PG, espacios de conjuros y habilidades. También restaurará la mitad de tus Dados de Golpe máximos.",
     confirmShortRest: "¿Tomar un Descanso Corto?",
-    confirmShortRestDesc: "Esto restaurará todas las habilidades que se reinician con un descanso corto.",
+    confirmShortRestDesc:
+      "Esto restaurará todas las habilidades que se reinician con un descanso corto.",
     spellcasting: "Espacios de Conjuros",
     editSlots: "Editar Espacios",
     doneEditing: "Finalizar",
@@ -150,15 +164,23 @@ export const translations = {
     cast: "Lanzar",
     noSpells: "No se han añadido conjuros",
     confirmDeleteSpell: "¿Eliminar Conjuro?",
-    confirmDeleteSpellDesc: "¿Estás seguro de que quieres eliminar este conjuros de tu lista de siempre preparados?",
+    confirmDeleteSpellDesc:
+      "¿Estás seguro de que quieres eliminar este conjuros de tu lista de siempre preparados?",
     characters: "Personajes",
     newCharacter: "Nuevo Personaje",
     deleteCharacter: "Eliminar Personaje",
     confirmDeleteChar: "¿Eliminar Personaje?",
-    confirmDeleteCharDesc: "Esto eliminará permanentemente a este personaje y todos sus datos.",
+    confirmDeleteCharDesc:
+      "Esto eliminará permanentemente a este personaje y todos sus datos.",
     selectCharacter: "Seleccionar Personaje",
     noCharacters: "No se encontraron personajes",
     active: "Activo",
-    amount: "Cant"
-  }
+    amount: "Cant",
+    inventory: "Inventario",
+    noItems: "No hay objetos en el inventario",
+    addItem: "Añadir Objeto",
+    itemTitle: "Título",
+    itemCount: "Cantidad",
+    addItemDesc: "Añade un nuevo objeto a tu inventario",
+  },
 };

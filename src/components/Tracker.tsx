@@ -21,6 +21,7 @@ import {
   Users,
   UserPlus,
   Check,
+  Package,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -67,7 +68,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CharacterState, SpellSlot, Ability, HitDice, Buff } from "../types";
+import {
+  CharacterState,
+  SpellSlot,
+  Ability,
+  HitDice,
+  Buff,
+  InventoryItem,
+} from "../types";
 import { translations, Language } from "../translations";
 
 const INITIAL_STATE: CharacterState = {
@@ -84,6 +92,7 @@ const INITIAL_STATE: CharacterState = {
   abilities: [],
   buffs: [],
   preparedSpells: [],
+  inventory: [],
 };
 
 export function Tracker() {
@@ -190,6 +199,10 @@ export function Tracker() {
   const [isEditingSpellSlots, setIsEditingSpellSlots] = useState(false);
   const [isEditingHitDice, setIsEditingHitDice] = useState(false);
   const [isEditingAbilities, setIsEditingAbilities] = useState(false);
+  const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
+  const [newInventoryTitle, setNewInventoryTitle] = useState("");
+  const [newInventoryDescription, setNewInventoryDescription] = useState("");
+  const [newInventoryCount, setNewInventoryCount] = useState(1);
   const [newSpellLevel, setNewSpellLevel] = useState(
     state.spellSlots.length > 0
       ? Math.max(...state.spellSlots.map((s) => s.level)) + 1
@@ -645,7 +658,7 @@ export function Tracker() {
       </header>
 
       <Tabs defaultValue="combat" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-12">
+        <TabsList className="grid w-full grid-cols-4 h-12">
           <TabsTrigger value="combat" className="flex items-center gap-2">
             <Sword className="h-4 w-4" />
             <span className="hidden sm:inline">{t.combat}</span>
@@ -657,6 +670,10 @@ export function Tracker() {
           <TabsTrigger value="abilities" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">{t.abilities}</span>
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            <span className="hidden sm:inline">{t.inventory}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1777,6 +1794,194 @@ export function Tracker() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="inventory" className="mt-4 space-y-4">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <Card className="mt-4 border-border bg-card/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">
+                    {t.inventory}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {state.inventory.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic text-center py-4">
+                      {t.noItems}
+                    </p>
+                  ) : (
+                    state.inventory.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/30"
+                      >
+                        <div className="min-w-0 flex-1 mr-2">
+                          <p className="font-medium text-sm">{item.title}</p>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              setState((prev) => ({
+                                ...prev,
+                                inventory: prev.inventory.map((inv) =>
+                                  inv.id === item.id
+                                    ? {
+                                        ...inv,
+                                        count: Math.max(0, inv.count - 1),
+                                      }
+                                    : inv,
+                                ),
+                              }))
+                            }
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="text-sm font-mono font-bold w-6 text-center">
+                            {item.count}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              setState((prev) => ({
+                                ...prev,
+                                inventory: prev.inventory.map((inv) =>
+                                  inv.id === item.id
+                                    ? { ...inv, count: inv.count + 1 }
+                                    : inv,
+                                ),
+                              }))
+                            }
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                            onClick={() =>
+                              setState((prev) => ({
+                                ...prev,
+                                inventory: prev.inventory.filter(
+                                  (inv) => inv.id !== item.id,
+                                ),
+                              }))
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <Dialog
+                    open={isAddInventoryOpen}
+                    onOpenChange={setIsAddInventoryOpen}
+                  >
+                    <DialogTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          className="w-full border-dashed"
+                        />
+                      }
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> {t.addItem}
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>{t.addItem}</DialogTitle>
+                        <DialogDescription>{t.addItemDesc}</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="inv-title">{t.itemTitle}</Label>
+                          <Input
+                            id="inv-title"
+                            value={newInventoryTitle}
+                            onChange={(e) =>
+                              setNewInventoryTitle(e.target.value)
+                            }
+                            placeholder="e.g. Sword, Gold Coin"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="inv-description">
+                            {t.description}
+                          </Label>
+                          <Input
+                            id="inv-description"
+                            value={newInventoryDescription}
+                            onChange={(e) =>
+                              setNewInventoryDescription(e.target.value)
+                            }
+                            placeholder="e.g. +1 Longsword, 100 gp"
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="inv-count">{t.itemCount}</Label>
+                          <Input
+                            id="inv-count"
+                            type="number"
+                            min="1"
+                            value={newInventoryCount}
+                            onChange={(e) =>
+                              setNewInventoryCount(
+                                Math.max(1, parseInt(e.target.value) || 1),
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <DialogClose
+                          render={
+                            <Button
+                              variant="default"
+                              size="default"
+                              onClick={() => {
+                                if (newInventoryTitle) {
+                                  setState((prev) => ({
+                                    ...prev,
+                                    inventory: [
+                                      ...prev.inventory,
+                                      {
+                                        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                        title: newInventoryTitle,
+                                        description: newInventoryDescription,
+                                        count: newInventoryCount,
+                                      },
+                                    ],
+                                  }));
+                                  setNewInventoryTitle("");
+                                  setNewInventoryDescription("");
+                                  setNewInventoryCount(1);
+                                }
+                              }}
+                            />
+                          }
+                        >
+                          {t.addItem}
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </CardContent>
+              </Card>
             </motion.div>
           </TabsContent>
         </AnimatePresence>
