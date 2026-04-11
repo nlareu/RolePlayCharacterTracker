@@ -1151,7 +1151,6 @@ export function Tracker() {
                               )}
                             </p>
                           )}
-
                         </div>
 
                         <div className="flex items-center gap-3">
