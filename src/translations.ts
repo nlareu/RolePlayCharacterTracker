@@ -51,7 +51,7 @@ export const translations = {
     descriptionPlaceholder: "Enter a description...",
     details: "Details",
     longRestAbbr: "Long",
-    resetOn: "Resets on",
+
     current: "Current",
     max: "Max",
     level: "LVL",
@@ -143,7 +143,7 @@ export const translations = {
     descriptionPlaceholder: "Introduce una descripción...",
     details: "Detalles",
     longRestAbbr: "Largo",
-    resetOn: "Se reinicia con",
+
     current: "Actual",
     max: "Máx",
     level: "NIV",

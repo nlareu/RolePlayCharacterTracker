@@ -193,9 +193,6 @@ export function Tracker() {
   const [newBuffName, setNewBuffName] = useState("");
   const [newBuffDescription, setNewBuffDescription] = useState("");
   const [newBuffTotal, setNewBuffTotal] = useState(1);
-  const [newBuffResetOn, setNewBuffResetOn] = useState<"short" | "long">(
-    "long",
-  );
   const [isAddAbilityOpen, setIsAddAbilityOpen] = useState(false);
   const [newAbilityName, setNewAbilityName] = useState("");
   const [newAbilityDescription, setNewAbilityDescription] = useState("");
@@ -475,9 +472,7 @@ export function Tracker() {
       hp: { ...prev.hp, current: prev.hp.max },
       spellSlots: prev.spellSlots.map((s) => ({ ...s, used: 0 })),
       abilities: prev.abilities.map((a) => ({ ...a, used: 0 })),
-      buffs: prev.buffs.map((b) =>
-        b.resetOn === "long" ? { ...b, used: 0 } : b,
-      ),
+      buffs: prev.buffs.map((b) => ({ ...b, used: 0 })),
       hitDice: prev.hitDice.map((hd) => ({
         ...hd,
         used: Math.max(0, hd.used - Math.floor(hd.total / 2)),
@@ -1066,37 +1061,6 @@ export function Tracker() {
                                   }
                                 />
                               </div>
-                              <div className="grid gap-2">
-                                <Label>{t.resetOn}</Label>
-                                <div className="flex gap-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={
-                                      newBuffResetOn === "short"
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                    className="flex-1 text-xs"
-                                    onClick={() => setNewBuffResetOn("short")}
-                                  >
-                                    {t.shortRest || "Short"}
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={
-                                      newBuffResetOn === "long"
-                                        ? "default"
-                                        : "outline"
-                                    }
-                                    className="flex-1 text-xs"
-                                    onClick={() => setNewBuffResetOn("long")}
-                                  >
-                                    {t.longRestAbbr}
-                                  </Button>
-                                </div>
-                              </div>
                             </div>
                           </div>
                           <DialogFooter>
@@ -1119,7 +1083,6 @@ export function Tracker() {
                                                   description:
                                                     newBuffDescription,
                                                   total: newBuffTotal,
-                                                  resetOn: newBuffResetOn,
                                                 }
                                               : b,
                                           ),
@@ -1138,7 +1101,6 @@ export function Tracker() {
                                               active: true,
                                               total: newBuffTotal,
                                               used: 0,
-                                              resetOn: newBuffResetOn,
                                             },
                                           ],
                                         }));
@@ -1146,7 +1108,6 @@ export function Tracker() {
                                       setNewBuffName("");
                                       setNewBuffDescription("");
                                       setNewBuffTotal(1);
-                                      setNewBuffResetOn("long");
                                     }
                                   }}
                                 />
@@ -1190,12 +1151,7 @@ export function Tracker() {
                               )}
                             </p>
                           )}
-                          <p className="text-[10px] uppercase tracking-tighter text-muted-foreground">
-                            {t.resetOn}{" "}
-                            {buff.resetOn === "short"
-                              ? t.shortRest || "Short Rest"
-                              : t.longRest}
-                          </p>
+
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -1210,7 +1166,6 @@ export function Tracker() {
                                   setNewBuffName(buff.name);
                                   setNewBuffDescription(buff.description);
                                   setNewBuffTotal(buff.total);
-                                  setNewBuffResetOn(buff.resetOn);
                                   setIsAddBuffOpen(true);
                                 }}
                                 title="Edit"
