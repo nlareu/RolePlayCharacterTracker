@@ -26,6 +26,9 @@ export type Buff = {
   description: string;
   duration?: string;
   active: boolean;
+  total: number;
+  used: number;
+  resetOn: "short" | "long";
 };
 
 export type PreparedSpell = {

@@ -192,6 +192,10 @@ export function Tracker() {
   const [isAddBuffOpen, setIsAddBuffOpen] = useState(false);
   const [newBuffName, setNewBuffName] = useState("");
   const [newBuffDescription, setNewBuffDescription] = useState("");
+  const [newBuffTotal, setNewBuffTotal] = useState(1);
+  const [newBuffResetOn, setNewBuffResetOn] = useState<"short" | "long">(
+    "long",
+  );
   const [isAddAbilityOpen, setIsAddAbilityOpen] = useState(false);
   const [newAbilityName, setNewAbilityName] = useState("");
   const [newAbilityDescription, setNewAbilityDescription] = useState("");
@@ -456,11 +460,11 @@ export function Tracker() {
     }));
   };
 
-  const toggleBuff = (id: string) => {
+  const toggleBuff = (id: string, index: number) => {
     setState((prev) => ({
       ...prev,
       buffs: prev.buffs.map((b) =>
-        b.id === id ? { ...b, active: !b.active } : b,
+        b.id === id ? { ...b, used: index < b.used ? index : index + 1 } : b,
       ),
     }));
   };
@@ -471,6 +475,9 @@ export function Tracker() {
       hp: { ...prev.hp, current: prev.hp.max },
       spellSlots: prev.spellSlots.map((s) => ({ ...s, used: 0 })),
       abilities: prev.abilities.map((a) => ({ ...a, used: 0 })),
+      buffs: prev.buffs.map((b) =>
+        b.resetOn === "long" ? { ...b, used: 0 } : b,
+      ),
       hitDice: prev.hitDice.map((hd) => ({
         ...hd,
         used: Math.max(0, hd.used - Math.floor(hd.total / 2)),
@@ -1044,6 +1051,53 @@ export function Tracker() {
                                 placeholder={t.descriptionPlaceholder}
                               />
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="grid gap-2">
+                                <Label htmlFor="buff-total">{t.uses}</Label>
+                                <Input
+                                  id="buff-total"
+                                  type="number"
+                                  min="1"
+                                  value={newBuffTotal}
+                                  onChange={(e) =>
+                                    setNewBuffTotal(
+                                      parseInt(e.target.value) || 1,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="grid gap-2">
+                                <Label>{t.resetOn}</Label>
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={
+                                      newBuffResetOn === "short"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    className="flex-1 text-xs"
+                                    onClick={() => setNewBuffResetOn("short")}
+                                  >
+                                    {t.shortRest || "Short"}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={
+                                      newBuffResetOn === "long"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    className="flex-1 text-xs"
+                                    onClick={() => setNewBuffResetOn("long")}
+                                  >
+                                    {t.longRestAbbr}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           <DialogFooter>
                             <DialogClose
@@ -1064,6 +1118,8 @@ export function Tracker() {
                                                   name: newBuffName,
                                                   description:
                                                     newBuffDescription,
+                                                  total: newBuffTotal,
+                                                  resetOn: newBuffResetOn,
                                                 }
                                               : b,
                                           ),
@@ -1080,12 +1136,17 @@ export function Tracker() {
                                               name: newBuffName,
                                               description: newBuffDescription,
                                               active: true,
+                                              total: newBuffTotal,
+                                              used: 0,
+                                              resetOn: newBuffResetOn,
                                             },
                                           ],
                                         }));
                                       }
                                       setNewBuffName("");
                                       setNewBuffDescription("");
+                                      setNewBuffTotal(1);
+                                      setNewBuffResetOn("long");
                                     }
                                   }}
                                 />
@@ -1129,77 +1190,139 @@ export function Tracker() {
                               )}
                             </p>
                           )}
+                          <p className="text-[10px] uppercase tracking-tighter text-muted-foreground">
+                            {t.resetOn}{" "}
+                            {buff.resetOn === "short"
+                              ? t.shortRest || "Short Rest"
+                              : t.longRest}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-2">
+
+                        <div className="flex items-center gap-3">
                           {isEditingBuffs ? (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-2 bg-secondary/30 rounded-md px-1 py-0.5 border border-border/50">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary p-0"
                                 onClick={() => {
                                   setEditingBuffId(buff.id);
                                   setNewBuffName(buff.name);
                                   setNewBuffDescription(buff.description);
+                                  setNewBuffTotal(buff.total);
+                                  setNewBuffResetOn(buff.resetOn);
                                   setIsAddBuffOpen(true);
                                 }}
                                 title="Edit"
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Pencil className="h-3 w-3" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary p-0"
                                 onClick={() => moveBuffUp(buff.id)}
                                 disabled={index === 0}
                               >
-                                <ChevronUp className="h-4 w-4" />
+                                <ChevronUp className="h-3 w-3" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary p-0"
                                 onClick={() => moveBuffDown(buff.id)}
                                 disabled={index === state.buffs.length - 1}
                               >
-                                <ChevronDown className="h-4 w-4" />
+                                <ChevronDown className="h-3 w-3" />
                               </Button>
+                              <Separator
+                                orientation="vertical"
+                                className="h-3 mx-0.5"
+                              />
+                              <button
+                                onClick={() =>
+                                  setState((prev) => ({
+                                    ...prev,
+                                    buffs: prev.buffs.map((b) =>
+                                      b.id === buff.id
+                                        ? {
+                                            ...b,
+                                            total: Math.max(1, b.total - 1),
+                                            used: Math.min(
+                                              b.used,
+                                              Math.max(1, b.total - 1),
+                                            ),
+                                          }
+                                        : b,
+                                    ),
+                                  }))
+                                }
+                                className="p-1 hover:text-primary transition-colors"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="text-xs font-mono font-bold w-4 text-center">
+                                {buff.total}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  setState((prev) => ({
+                                    ...prev,
+                                    buffs: prev.buffs.map((b) =>
+                                      b.id === buff.id
+                                        ? { ...b, total: b.total + 1 }
+                                        : b,
+                                    ),
+                                  }))
+                                }
+                                className="p-1 hover:text-primary transition-colors"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                              <Separator
+                                orientation="vertical"
+                                className="h-3 mx-0.5"
+                              />
+                              {isEditingBuffs && (
+                                <button
+                                  onClick={() =>
+                                    setState((prev) => ({
+                                      ...prev,
+                                      buffs: prev.buffs.filter(
+                                        (b) => b.id !== buff.id,
+                                      ),
+                                    }))
+                                  }
+                                  className="p-1 hover:text-destructive transition-colors"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
                             </div>
                           ) : (
-                            <button
-                              onClick={() => toggleBuff(buff.id)}
-                              className={`
-                                h-7 w-7 rounded-md border-2 transition-all duration-200 flex items-center justify-center
-                                ${
-                                  !buff.active
-                                    ? "bg-muted border-muted-foreground/30 text-muted-foreground"
-                                    : "bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]"
-                                }
-                                hover:scale-110 active:scale-95
-                              `}
-                            >
-                              {!buff.active ? null : (
-                                <div className="h-2 w-2 rounded-full bg-primary" />
+                            <div className="flex items-center gap-1.5">
+                              {Array.from({ length: buff.total }).map(
+                                (_, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => toggleBuff(buff.id, i)}
+                                    className={`
+                                    h-7 w-7 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                                    ${
+                                      i < buff.used
+                                        ? "bg-muted border-muted-foreground/30 text-muted-foreground"
+                                        : "bg-primary/10 border-primary text-primary shadow-[0_0_8px_rgba(var(--primary),0.2)]"
+                                    }
+                                    hover:scale-110 active:scale-95
+                                  `}
+                                  >
+                                    {i < buff.used ? null : (
+                                      <div className="h-2 w-2 rounded-full bg-primary" />
+                                    )}
+                                  </button>
+                                ),
                               )}
-                            </button>
-                          )}
-                          {isEditingBuffs && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                              onClick={() =>
-                                setState((prev) => ({
-                                  ...prev,
-                                  buffs: prev.buffs.filter(
-                                    (b) => b.id !== buff.id,
-                                  ),
-                                }))
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            </div>
                           )}
                         </div>
                       </div>
