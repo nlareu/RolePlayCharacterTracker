@@ -84,6 +84,7 @@ const INITIAL_STATE: CharacterState = {
   name: "Aventurero",
   hp: { current: 25, max: 25, temp: 0 },
   inspiration: false,
+  deathSaves: { successes: 0, failures: 0 },
   spellSlots: [
     { level: 1, total: 4, used: 0 },
     { level: 2, total: 3, used: 0 },
@@ -390,6 +391,35 @@ export function Tracker() {
     setState((prev) => ({
       ...prev,
       hp: { ...prev.hp, temp: Math.max(0, prev.hp.temp + amount) },
+    }));
+  };
+
+  const toggleDeathSaveSuccess = () => {
+    setState((prev) => ({
+      ...prev,
+      deathSaves: {
+        ...prev.deathSaves,
+        successes:
+          prev.deathSaves.successes < 3 ? prev.deathSaves.successes + 1 : 0,
+      },
+    }));
+  };
+
+  const toggleDeathSaveFailure = () => {
+    setState((prev) => ({
+      ...prev,
+      deathSaves: {
+        ...prev.deathSaves,
+        failures:
+          prev.deathSaves.failures < 3 ? prev.deathSaves.failures + 1 : 0,
+      },
+    }));
+  };
+
+  const resetDeathSaves = () => {
+    setState((prev) => ({
+      ...prev,
+      deathSaves: { successes: 0, failures: 0 },
     }));
   };
 
@@ -953,6 +983,83 @@ export function Tracker() {
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="mt-4 border-border bg-card/30">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      {t.deathSaves}
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={resetDeathSaves}
+                      title={t.reset}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <p className="text-xs uppercase text-green-600 font-semibold tracking-wider">
+                        {t.successes}
+                      </p>
+                      <div className="flex gap-3">
+                        {[0, 1, 2].map((i) => (
+                          <button
+                            key={`success-${i}`}
+                            onClick={() => {
+                              setState((prev) => ({
+                                ...prev,
+                                deathSaves: {
+                                  ...prev.deathSaves,
+                                  successes: i + 1,
+                                },
+                              }));
+                            }}
+                            title="Click to set successes"
+                            className={`h-8 w-8 rounded-full border-2 transition-all ${
+                              i < state.deathSaves.successes
+                                ? "border-green-500 bg-green-500"
+                                : "border-green-500 bg-transparent hover:bg-green-500/10"
+                            } cursor-pointer`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <p className="text-xs uppercase text-red-600 font-semibold tracking-wider">
+                        {t.failures}
+                      </p>
+                      <div className="flex gap-3">
+                        {[0, 1, 2].map((i) => (
+                          <button
+                            key={`failure-${i}`}
+                            onClick={() => {
+                              setState((prev) => ({
+                                ...prev,
+                                deathSaves: {
+                                  ...prev.deathSaves,
+                                  failures: i + 1,
+                                },
+                              }));
+                            }}
+                            title="Click to set failures"
+                            className={`h-8 w-8 rounded-full border-2 transition-all ${
+                              i < state.deathSaves.failures
+                                ? "border-red-500 bg-red-500"
+                                : "border-red-500 bg-transparent hover:bg-red-500/10"
+                            } cursor-pointer`}
+                          />
+                        ))}
                       </div>
                     </div>
                   </div>

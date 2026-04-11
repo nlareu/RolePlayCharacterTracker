@@ -43,6 +43,11 @@ export type InventoryItem = {
   count: number;
 };
 
+export type DeathSaves = {
+  successes: number;
+  failures: number;
+};
+
 export type CharacterState = {
   id: string;
   name: string;
@@ -52,6 +57,7 @@ export type CharacterState = {
     temp: number;
   };
   inspiration: boolean;
+  deathSaves: DeathSaves;
   spellSlots: SpellSlot[];
   hitDice: HitDice[];
   abilities: Ability[];
