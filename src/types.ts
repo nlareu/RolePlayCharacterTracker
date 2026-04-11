@@ -26,6 +26,8 @@ export type Buff = {
   description: string;
   duration?: string;
   active: boolean;
+  total: number;
+  used: number;
 };
 
 export type PreparedSpell = {
@@ -41,6 +43,11 @@ export type InventoryItem = {
   count: number;
 };
 
+export type DeathSaves = {
+  successes: number;
+  failures: number;
+};
+
 export type CharacterState = {
   id: string;
   name: string;
@@ -49,7 +56,7 @@ export type CharacterState = {
     max: number;
     temp: number;
   };
-  inspiration: boolean;
+  deathSaves: DeathSaves;
   spellSlots: SpellSlot[];
   hitDice: HitDice[];
   abilities: Ability[];
