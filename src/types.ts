@@ -10,7 +10,7 @@ export type Ability = {
   description?: string;
   total: number;
   used: number;
-  resetOn: 'short' | 'long';
+  resetOn: "short" | "long";
 };
 
 export type HitDice = {
@@ -34,6 +34,13 @@ export type PreparedSpell = {
   used: boolean;
 };
 
+export type InventoryItem = {
+  id: string;
+  title: string;
+  description: string;
+  count: number;
+};
+
 export type CharacterState = {
   id: string;
   name: string;
@@ -48,4 +55,5 @@ export type CharacterState = {
   abilities: Ability[];
   buffs: Buff[];
   preparedSpells: PreparedSpell[];
+  inventory: InventoryItem[];
 };
