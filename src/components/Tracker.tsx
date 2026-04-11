@@ -687,45 +687,6 @@ export function Tracker() {
                     </button>
                   </div>
                 </div>
-
-                <Separator />
-
-                {/* Reset Data */}
-                <div className="mt-auto pt-4">
-                  <AlertDialog>
-                    <AlertDialogTrigger
-                      render={
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start gap-2 h-11 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          {t.resetData}
-                        </Button>
-                      }
-                    />
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{t.confirmReset}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t.confirmResetDesc}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel variant="outline" size="default">
-                          {t.cancel}
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          variant="default"
-                          size="default"
-                          onClick={() => setState(() => INITIAL_STATE)}
-                        >
-                          {t.reset}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
               </div>
             </SheetContent>
           </Sheet>
