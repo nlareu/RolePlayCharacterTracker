@@ -722,6 +722,30 @@ export function Tracker() {
     }));
   };
 
+  const moveSlotSpell = (level: number, spellId: string, direction: "up" | "down") => {
+    setState((prev) => ({
+      ...prev,
+      spellSlots: prev.spellSlots.map((s) => {
+        if (s.level === level && s.spells) {
+          const spells = [...s.spells];
+          const index = spells.findIndex((sp) => sp.id === spellId);
+          if (index === -1) return s;
+          
+          if (direction === "up" && index > 0) {
+            [spells[index], spells[index - 1]] = [spells[index - 1], spells[index]];
+          } else if (direction === "down" && index < spells.length - 1) {
+            [spells[index], spells[index + 1]] = [spells[index + 1], spells[index]];
+          } else {
+            return s;
+          }
+          
+          return { ...s, spells };
+        }
+        return s;
+      }),
+    }));
+  };
+
   const toggleAbility = (id: string, index: number) => {
     setState((prev) => ({
       ...prev,
@@ -1879,6 +1903,24 @@ export function Tracker() {
                                     </button>
                                   </span>
                                   <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() =>
+                                        moveSlotSpell(slot.level, spell.id, "up")
+                                      }
+                                      className="p-1 text-muted-foreground hover:text-primary transition-colors"
+                                      title="Move up"
+                                    >
+                                      <ChevronUp className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        moveSlotSpell(slot.level, spell.id, "down")
+                                      }
+                                      className="p-1 text-muted-foreground hover:text-primary transition-colors"
+                                      title="Move down"
+                                    >
+                                      <ChevronDown className="h-3 w-3" />
+                                    </button>
                                     <button
                                       onClick={() => {
                                         setEditingSlotSpellId(spell.id);
