@@ -78,6 +78,7 @@ import {
   HitDice,
   Buff,
   InventoryItem,
+  PreparedSpell,
 } from "../types";
 import { translations, Language } from "../translations";
 
@@ -241,6 +242,11 @@ export function Tracker() {
   const [newAbilityTotal, setNewAbilityTotal] = useState(1);
   const [selectedAbility, setSelectedAbility] = useState<Ability | null>(null);
   const [selectedBuff, setSelectedBuff] = useState<Buff | null>(null);
+  const [selectedSpell, setSelectedSpell] = useState<PreparedSpell | null>(
+    null,
+  );
+  const [selectedInventory, setSelectedInventory] =
+    useState<InventoryItem | null>(null);
   const [isEditingBuffs, setIsEditingBuffs] = useState(false);
   const [isEditingSpells, setIsEditingSpells] = useState(false);
   const [isEditingInventory, setIsEditingInventory] = useState(false);
@@ -1438,7 +1444,10 @@ export function Tracker() {
                         key={buff.id}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${buff.active ? "bg-secondary/30 border-border/50" : "bg-muted/20 border-transparent opacity-60"}`}
                       >
-                        <div className="min-w-0 flex-1 mr-2">
+                        <button
+                          onClick={() => setSelectedBuff(buff)}
+                          className="min-w-0 flex-1 mr-2 text-left hover:opacity-70 transition-opacity"
+                        >
                           <p
                             className={`font-medium text-sm truncate ${!buff.active ? "text-muted-foreground line-through" : ""}`}
                           >
@@ -1447,17 +1456,9 @@ export function Tracker() {
                           {buff.description && (
                             <p className="text-xs text-muted-foreground line-clamp-1">
                               {buff.description}
-                              {buff.description.length > 40 && (
-                                <button
-                                  onClick={() => setSelectedBuff(buff)}
-                                  className="ml-1 text-primary hover:underline font-medium"
-                                >
-                                  ...
-                                </button>
-                              )}
                             </p>
                           )}
-                        </div>
+                        </button>
 
                         <div className="flex items-center gap-3">
                           {isEditingBuffs ? (
@@ -1955,7 +1956,10 @@ export function Tracker() {
                               className={`h-4 w-4 ${spell.used ? "text-muted-foreground" : "text-primary"}`}
                             />
                           </div>
-                          <div className="min-w-0 flex-1">
+                          <button
+                            onClick={() => setSelectedSpell(spell)}
+                            className="min-w-0 flex-1 text-left hover:opacity-70 transition-opacity"
+                          >
                             <span
                               className={`font-medium text-sm block truncate ${spell.used ? "text-muted-foreground line-through" : ""}`}
                             >
@@ -1966,7 +1970,7 @@ export function Tracker() {
                                 {spell.description}
                               </span>
                             )}
-                          </div>
+                          </button>
                         </div>
                         <div className="flex items-center gap-2">
                           {isEditingSpells ? (
@@ -2374,25 +2378,20 @@ export function Tracker() {
                     <div className="h-1 w-full bg-purple-500" />
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <div className="space-y-1 min-w-0 flex-1">
+                        <button
+                          onClick={() => setSelectedAbility(ability)}
+                          className="space-y-1 min-w-0 flex-1 text-left hover:opacity-70 transition-opacity"
+                        >
                           <p className="font-bold truncate">{ability.name}</p>
                           {ability.description && (
                             <p className="text-xs text-muted-foreground line-clamp-1">
                               {ability.description}
-                              {ability.description.length > 40 && (
-                                <button
-                                  onClick={() => setSelectedAbility(ability)}
-                                  className="ml-1 text-primary hover:underline font-medium"
-                                >
-                                  ...
-                                </button>
-                              )}
                             </p>
                           )}
                           <p className="text-[10px] uppercase tracking-tighter text-muted-foreground">
                             {t.resetOn} {t.longRest}
                           </p>
-                        </div>
+                        </button>
 
                         <div className="flex items-center gap-3">
                           {isEditingAbilities ? (
@@ -2557,50 +2556,6 @@ export function Tracker() {
                   </Card>
                 ))
               )}
-
-              <Dialog
-                open={!!selectedAbility}
-                onOpenChange={(open) => !open && setSelectedAbility(null)}
-              >
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{selectedAbility?.name}</DialogTitle>
-                    <DialogDescription>{t.details}</DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {selectedAbility?.description}
-                    </p>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={() => setSelectedAbility(null)}>
-                      {t.cancel}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog
-                open={!!selectedBuff}
-                onOpenChange={(open) => !open && setSelectedBuff(null)}
-              >
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{selectedBuff?.name}</DialogTitle>
-                    <DialogDescription>{t.details}</DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {selectedBuff?.description}
-                    </p>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={() => setSelectedBuff(null)}>
-                      {t.cancel}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
             </motion.div>
           </TabsContent>
 
@@ -2774,14 +2729,17 @@ export function Tracker() {
                         key={item.id}
                         className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/30"
                       >
-                        <div className="min-w-0 flex-1 mr-2">
+                        <button
+                          onClick={() => setSelectedInventory(item)}
+                          className="min-w-0 flex-1 mr-2 text-left hover:opacity-70 transition-opacity"
+                        >
                           <p className="font-medium text-sm">{item.title}</p>
                           {item.description && (
                             <p className="text-xs text-muted-foreground line-clamp-1">
                               {item.description}
                             </p>
                           )}
-                        </div>
+                        </button>
                         <div className="flex items-center gap-2 shrink-0">
                           {isEditingInventory ? (
                             <div className="flex items-center gap-1">
@@ -2921,6 +2879,108 @@ export function Tracker() {
           </TabsContent>
         </AnimatePresence>
       </Tabs>
+
+      <Dialog
+        open={!!selectedSpell}
+        onOpenChange={(open) => !open && setSelectedSpell(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedSpell?.name}</DialogTitle>
+            <DialogDescription>{t.details}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            {selectedSpell?.description && (
+              <div>
+                <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                  {t.description}
+                </Label>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2">
+                  {selectedSpell.description}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSelectedSpell(null)}>{t.cancel}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!selectedInventory}
+        onOpenChange={(open) => !open && setSelectedInventory(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedInventory?.title}</DialogTitle>
+            <DialogDescription>{t.details}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            {selectedInventory?.description && (
+              <div>
+                <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                  {t.description}
+                </Label>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2">
+                  {selectedInventory.description}
+                </p>
+              </div>
+            )}
+            <div>
+              <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                {t.count}
+              </Label>
+              <p className="text-sm mt-2">{selectedInventory?.count}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSelectedInventory(null)}>
+              {t.cancel}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!selectedAbility}
+        onOpenChange={(open) => !open && setSelectedAbility(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedAbility?.name}</DialogTitle>
+            <DialogDescription>{t.details}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {selectedAbility?.description}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSelectedAbility(null)}>{t.cancel}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!selectedBuff}
+        onOpenChange={(open) => !open && setSelectedBuff(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedBuff?.name}</DialogTitle>
+            <DialogDescription>{t.details}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {selectedBuff?.description}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSelectedBuff(null)}>{t.cancel}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
