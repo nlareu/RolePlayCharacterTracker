@@ -23,6 +23,8 @@ import {
   Check,
   Package,
   Pencil,
+  Download,
+  Upload,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -256,6 +258,69 @@ export function Tracker() {
   });
 
   const t = translations[lang];
+
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+
+  // Export data to file
+  const handleExport = () => {
+    const exportData = {
+      characters,
+      activeCharacterId,
+      exportedAt: new Date().toISOString(),
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `character-data-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import data from file
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const importedData = JSON.parse(content);
+
+        // Validate structure
+        if (
+          !importedData.characters ||
+          !Array.isArray(importedData.characters)
+        ) {
+          alert(t.importError);
+          return;
+        }
+
+        // Import the data
+        setCharacters(importedData.characters);
+        if (
+          importedData.activeCharacterId &&
+          importedData.characters.some(
+            (c: CharacterState) => c.id === importedData.activeCharacterId,
+          )
+        ) {
+          setActiveCharacterId(importedData.activeCharacterId);
+        }
+
+        setIsImportDialogOpen(false);
+        alert(t.importSuccess);
+      } catch (error) {
+        console.error("Import error:", error);
+        alert(t.importError);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -813,6 +878,62 @@ export function Tracker() {
                     >
                       ESPAÑOL
                     </button>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Export/Import */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Package className="h-4 w-4" />
+                    {t.exportData}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExport}
+                      className="flex-1 gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      {t.export}
+                    </Button>
+                    <Dialog
+                      open={isImportDialogOpen}
+                      onOpenChange={setIsImportDialogOpen}
+                    >
+                      <DialogTrigger
+                        render={
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 gap-2"
+                          >
+                            <Upload className="h-4 w-4" />
+                            {t.import}
+                          </Button>
+                        }
+                      />
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{t.importData}</DialogTitle>
+                          <DialogDescription>{t.importDesc}</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="import-file">{t.selectFile}</Label>
+                            <Input
+                              id="import-file"
+                              type="file"
+                              accept=".json"
+                              onChange={handleImport}
+                              className="cursor-pointer"
+                            />
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </div>
