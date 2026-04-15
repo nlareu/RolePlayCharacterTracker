@@ -176,6 +176,20 @@ export function Tracker() {
     return characters[0]?.id || "default";
   });
 
+  const tabOrder = ["combat", "magic", "abilities", "inventory"] as const;
+  const [activeTab, setActiveTab] = useState<string>("combat");
+
+  const moveTab = (direction: "left" | "right") => {
+    const currentIndex = tabOrder.indexOf(activeTab as any);
+    if (currentIndex === -1) return;
+
+    let nextIndex = currentIndex + (direction === "right" ? 1 : -1);
+    if (nextIndex < 0) nextIndex = tabOrder.length - 1;
+    if (nextIndex >= tabOrder.length) nextIndex = 0;
+
+    setActiveTab(tabOrder[nextIndex]);
+  };
+
   const state =
     characters.find((c) => c.id === activeCharacterId) ||
     characters[0] ||
@@ -238,6 +252,62 @@ export function Tracker() {
   });
 
   const t = translations[lang];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle arrow keys when no input is focused
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        moveTab("left");
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        moveTab("right");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeTab]);
+
+  // Swipe gesture detection for mobile
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const minSwipeDistance = 50; // Minimum pixels to register as a swipe
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.changedTouches[0].screenX;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchEndX = e.changedTouches[0].screenX;
+      const diffX = touchStartX - touchEndX;
+
+      // Swipe left (negative diff means swiping right, which shows previous tab)
+      if (diffX > minSwipeDistance) {
+        moveTab("right");
+      }
+      // Swipe right (positive diff means swiping left, which shows next tab)
+      else if (diffX < -minSwipeDistance) {
+        moveTab("left");
+      }
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, false);
+    window.addEventListener("touchend", handleTouchEnd, false);
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [activeTab]);
 
   useEffect(() => {
     localStorage.setItem("dnd_tracker_lang", lang);
@@ -759,7 +829,7 @@ export function Tracker() {
         </div>
       </header>
 
-      <Tabs defaultValue="combat" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 h-12">
           <TabsTrigger value="combat" className="flex items-center gap-2">
             <Sword className="h-4 w-4" />
