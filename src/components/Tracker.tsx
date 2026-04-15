@@ -178,6 +178,9 @@ export function Tracker() {
 
   const tabOrder = ["combat", "magic", "abilities", "inventory"] as const;
   const [activeTab, setActiveTab] = useState<string>("combat");
+  const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(
+    null,
+  );
 
   const moveTab = (direction: "left" | "right") => {
     const currentIndex = tabOrder.indexOf(activeTab as any);
@@ -187,6 +190,7 @@ export function Tracker() {
     if (nextIndex < 0) nextIndex = tabOrder.length - 1;
     if (nextIndex >= tabOrder.length) nextIndex = 0;
 
+    setSlideDirection(direction);
     setActiveTab(tabOrder[nextIndex]);
   };
 
@@ -308,6 +312,31 @@ export function Tracker() {
       window.removeEventListener("touchend", handleTouchEnd);
     };
   }, [activeTab]);
+
+  // Calculate animation values based on slide direction
+  const getSlideVariant = () => {
+    if (slideDirection === "right") {
+      return {
+        initial: { x: 100, opacity: 0 },
+        animate: { x: 0, opacity: 1 },
+        exit: { x: -100, opacity: 0 },
+      };
+    } else if (slideDirection === "left") {
+      return {
+        initial: { x: -100, opacity: 0 },
+        animate: { x: 0, opacity: 1 },
+        exit: { x: 100, opacity: 0 },
+      };
+    }
+    // Fallback for initial render
+    return {
+      initial: { x: 0, opacity: 0 },
+      animate: { x: 0, opacity: 1 },
+      exit: { x: 0, opacity: 0 },
+    };
+  };
+
+  const slideVariant = getSlideVariant();
 
   useEffect(() => {
     localStorage.setItem("dnd_tracker_lang", lang);
@@ -852,9 +881,11 @@ export function Tracker() {
         <AnimatePresence mode="wait">
           <TabsContent value="combat" className="mt-4 space-y-4">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              key={`combat-${activeTab}`}
+              initial={slideVariant.initial}
+              animate={slideVariant.animate}
+              exit={slideVariant.exit}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
             >
               <Card className="border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
                 <CardHeader className="pb-2">
@@ -1459,9 +1490,11 @@ export function Tracker() {
 
           <TabsContent value="magic" className="mt-4 space-y-4">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              key={`magic-${activeTab}`}
+              initial={slideVariant.initial}
+              animate={slideVariant.animate}
+              exit={slideVariant.exit}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
               className="space-y-4"
             >
               <div className="flex items-center justify-between px-1">
@@ -1886,9 +1919,11 @@ export function Tracker() {
 
           <TabsContent value="abilities" className="mt-4 space-y-4">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              key={`abilities-${activeTab}`}
+              initial={slideVariant.initial}
+              animate={slideVariant.animate}
+              exit={slideVariant.exit}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
               className="space-y-4"
             >
               <Card className="bg-card/40 border-primary/10">
@@ -2397,9 +2432,11 @@ export function Tracker() {
 
           <TabsContent value="inventory" className="mt-4 space-y-4">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              key={`inventory-${activeTab}`}
+              initial={slideVariant.initial}
+              animate={slideVariant.animate}
+              exit={slideVariant.exit}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
             >
               <Card className="mt-4 border-border bg-card/30">
                 <CardHeader className="pb-2">
