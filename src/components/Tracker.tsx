@@ -79,6 +79,7 @@ import {
   Buff,
   InventoryItem,
   PreparedSpell,
+  Spell,
 } from "../types";
 import { translations, Language } from "../translations";
 
@@ -88,9 +89,9 @@ const INITIAL_STATE: CharacterState = {
   hp: { current: 25, max: 25, temp: 0 },
   deathSaves: { successes: 0, failures: 0 },
   spellSlots: [
-    { level: 1, total: 4, used: 0 },
-    { level: 2, total: 3, used: 0 },
-    { level: 3, total: 2, used: 0 },
+    { level: 1, total: 4, used: 0, spells: [] },
+    { level: 2, total: 3, used: 0, spells: [] },
+    { level: 3, total: 2, used: 0, spells: [] },
   ],
   hitDice: [{ id: "default-hd", dieType: "d8", total: 5, used: 0 }],
   abilities: [],
@@ -250,6 +251,22 @@ export function Tracker() {
   const [isEditingBuffs, setIsEditingBuffs] = useState(false);
   const [isEditingSpells, setIsEditingSpells] = useState(false);
   const [isEditingInventory, setIsEditingInventory] = useState(false);
+
+  // Slot spells management state
+  const [isAddSlotSpellOpen, setIsAddSlotSpellOpen] = useState(false);
+  const [selectedSpellSlotLevel, setSelectedSpellSlotLevel] = useState<
+    number | null
+  >(null);
+  const [newSlotSpellTitle, setNewSlotSpellTitle] = useState("");
+  const [newSlotSpellDescription, setNewSlotSpellDescription] = useState("");
+  const [selectedSlotSpell, setSelectedSlotSpell] = useState<Spell | null>(
+    null,
+  );
+  const [isSlotSpellInfoDialogOpen, setIsSlotSpellInfoDialogOpen] =
+    useState(false);
+  const [editingSlotSpellId, setEditingSlotSpellId] = useState<string | null>(
+    null,
+  );
 
   // Edit mode tracking
   const [editingBuffId, setEditingBuffId] = useState<string | null>(null);
@@ -623,7 +640,7 @@ export function Tracker() {
       ...prev,
       spellSlots: [
         ...prev.spellSlots,
-        { level: newSpellLevel, total: 1, used: 0 },
+        { level: newSpellLevel, total: 1, used: 0, spells: [] },
       ].sort((a, b) => a.level - b.level),
     }));
     setNewSpellLevel((prev) => prev + 1);
@@ -633,6 +650,75 @@ export function Tracker() {
     setState((prev) => ({
       ...prev,
       spellSlots: prev.spellSlots.filter((s) => s.level !== level),
+    }));
+  };
+
+  const addSlotSpell = (level: number) => {
+    if (!newSlotSpellTitle.trim()) return;
+    setState((prev) => ({
+      ...prev,
+      spellSlots: prev.spellSlots.map((s) => {
+        if (s.level === level) {
+          return {
+            ...s,
+            spells: [
+              ...(s.spells || []),
+              {
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                title: newSlotSpellTitle,
+                description: newSlotSpellDescription,
+              },
+            ],
+          };
+        }
+        return s;
+      }),
+    }));
+    setNewSlotSpellTitle("");
+    setNewSlotSpellDescription("");
+    setIsAddSlotSpellOpen(false);
+  };
+
+  const updateSlotSpell = (level: number, spellId: string) => {
+    if (!newSlotSpellTitle.trim()) return;
+    setState((prev) => ({
+      ...prev,
+      spellSlots: prev.spellSlots.map((s) => {
+        if (s.level === level) {
+          return {
+            ...s,
+            spells: (s.spells || []).map((sp) =>
+              sp.id === spellId
+                ? {
+                    ...sp,
+                    title: newSlotSpellTitle,
+                    description: newSlotSpellDescription,
+                  }
+                : sp,
+            ),
+          };
+        }
+        return s;
+      }),
+    }));
+    setNewSlotSpellTitle("");
+    setNewSlotSpellDescription("");
+    setEditingSlotSpellId(null);
+    setIsAddSlotSpellOpen(false);
+  };
+
+  const deleteSlotSpell = (level: number, spellId: string) => {
+    setState((prev) => ({
+      ...prev,
+      spellSlots: prev.spellSlots.map((s) => {
+        if (s.level === level) {
+          return {
+            ...s,
+            spells: (s.spells || []).filter((sp) => sp.id !== spellId),
+          };
+        }
+        return s;
+      }),
     }));
   };
 
@@ -1769,6 +1855,92 @@ export function Tracker() {
                         </button>
                       ))}
                     </div>
+
+                    {!isEditingSpellSlots && (
+                      <>
+                        {slot.spells && slot.spells.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-primary/10">
+                            <div className="space-y-2">
+                              {slot.spells.map((spell) => (
+                                <div
+                                  key={spell.id}
+                                  className="flex items-center justify-between gap-2 text-sm py-1.5 px-2 rounded bg-primary/5 hover:bg-primary/10 transition-colors group"
+                                >
+                                  <span className="flex-1 text-foreground font-medium">
+                                    {spell.title}
+                                    <button
+                                      onClick={() => {
+                                        setSelectedSlotSpell(spell);
+                                        setIsSlotSpellInfoDialogOpen(true);
+                                      }}
+                                      className="ml-2 inline-flex text-muted-foreground hover:text-primary transition-colors"
+                                    >
+                                      <Info className="h-3.5 w-3.5" />
+                                    </button>
+                                  </span>
+                                  <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() => {
+                                        setEditingSlotSpellId(spell.id);
+                                        setNewSlotSpellTitle(spell.title);
+                                        setNewSlotSpellDescription(
+                                          spell.description || "",
+                                        );
+                                        setSelectedSpellSlotLevel(slot.level);
+                                        setIsAddSlotSpellOpen(true);
+                                      }}
+                                      className="p-1 text-muted-foreground hover:text-primary transition-colors"
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        deleteSlotSpell(slot.level, spell.id)
+                                      }
+                                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full mt-2 h-7 text-xs text-muted-foreground hover:text-primary"
+                              onClick={() => {
+                                setSelectedSpellSlotLevel(slot.level);
+                                setNewSlotSpellTitle("");
+                                setNewSlotSpellDescription("");
+                                setEditingSlotSpellId(null);
+                                setIsAddSlotSpellOpen(true);
+                              }}
+                            >
+                              <Plus className="h-3 w-3 mr-1" /> Add Spell
+                            </Button>
+                          </div>
+                        )}
+                        {(!slot.spells || slot.spells.length === 0) && (
+                          <div className="mt-3 text-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                setSelectedSpellSlotLevel(slot.level);
+                                setNewSlotSpellTitle("");
+                                setNewSlotSpellDescription("");
+                                setEditingSlotSpellId(null);
+                                setIsAddSlotSpellOpen(true);
+                              }}
+                            >
+                              <Plus className="h-3 w-3 mr-1" /> Add Spell
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -2088,6 +2260,89 @@ export function Tracker() {
                   ))
                 )}
               </div>
+
+              {/* Add/Edit Slot Spell Dialog */}
+              <Dialog
+                open={isAddSlotSpellOpen}
+                onOpenChange={(open) => {
+                  setIsAddSlotSpellOpen(open);
+                  if (!open) {
+                    setNewSlotSpellTitle("");
+                    setNewSlotSpellDescription("");
+                    setEditingSlotSpellId(null);
+                    setSelectedSpellSlotLevel(null);
+                  }
+                }}
+              >
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingSlotSpellId ? "Edit Spell" : "Add Spell"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      Add a spell to level {selectedSpellSlotLevel}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="slot-spell-title">Title</Label>
+                      <Input
+                        id="slot-spell-title"
+                        value={newSlotSpellTitle}
+                        onChange={(e) => setNewSlotSpellTitle(e.target.value)}
+                        placeholder="e.g. Fire Bolt, Cure Wounds"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="slot-spell-description">
+                        Description
+                      </Label>
+                      <Input
+                        id="slot-spell-description"
+                        value={newSlotSpellDescription}
+                        onChange={(e) =>
+                          setNewSlotSpellDescription(e.target.value)
+                        }
+                        placeholder="Spell details and effects"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <button
+                      onClick={() => {
+                        if (editingSlotSpellId && selectedSpellSlotLevel) {
+                          updateSlotSpell(
+                            selectedSpellSlotLevel,
+                            editingSlotSpellId,
+                          );
+                        } else if (selectedSpellSlotLevel) {
+                          addSlotSpell(selectedSpellSlotLevel);
+                        }
+                      }}
+                      className="px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    >
+                      {editingSlotSpellId ? "Save Changes" : "Add Spell"}
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Spell Info Dialog */}
+              <Dialog
+                open={isSlotSpellInfoDialogOpen}
+                onOpenChange={setIsSlotSpellInfoDialogOpen}
+              >
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>{selectedSlotSpell?.title}</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <div className="text-sm text-foreground whitespace-pre-wrap">
+                      {selectedSlotSpell?.description || "No description"}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </motion.div>
           </TabsContent>
 

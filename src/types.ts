@@ -1,7 +1,14 @@
+export type Spell = {
+  id: string;
+  title: string;
+  description?: string;
+};
+
 export type SpellSlot = {
   level: number;
   total: number;
   used: number;
+  spells?: Spell[];
 };
 
 export type Ability = {
