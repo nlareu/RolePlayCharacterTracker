@@ -930,12 +930,20 @@ export function Tracker() {
                         type="number"
                         value={state.hp.max}
                         onChange={(e) => {
-                          const val = parseInt(e.target.value);
-                          if (!isNaN(val))
+                          const inputValue = e.target.value;
+                          if (inputValue === "") {
                             setState((prev) => ({
                               ...prev,
-                              hp: { ...prev.hp, max: val },
+                              hp: { ...prev.hp, max: "" },
                             }));
+                          } else {
+                            const val = parseInt(inputValue);
+                            if (!isNaN(val))
+                              setState((prev) => ({
+                                ...prev,
+                                hp: { ...prev.hp, max: val },
+                              }));
+                          }
                         }}
                         className="h-8 w-24 text-center font-mono"
                       />
@@ -1226,11 +1234,15 @@ export function Tracker() {
                                   type="number"
                                   min="1"
                                   value={newBuffTotal}
-                                  onChange={(e) =>
-                                    setNewBuffTotal(
-                                      parseInt(e.target.value) || 1,
-                                    )
-                                  }
+                                  onChange={(e) => {
+                                    const inputValue = e.target.value;
+                                    if (inputValue === "") {
+                                      setNewBuffTotal("");
+                                    } else {
+                                      const val = parseInt(inputValue);
+                                      if (!isNaN(val)) setNewBuffTotal(val);
+                                    }
+                                  }}
                                 />
                               </div>
                             </div>
@@ -1652,9 +1664,15 @@ export function Tracker() {
                         id="new-spell-level"
                         type="number"
                         value={newSpellLevel}
-                        onChange={(e) =>
-                          setNewSpellLevel(parseInt(e.target.value) || 1)
-                        }
+                        onChange={(e) => {
+                          const inputValue = e.target.value;
+                          if (inputValue === "") {
+                            setNewSpellLevel("");
+                          } else {
+                            const val = parseInt(inputValue);
+                            if (!isNaN(val)) setNewSpellLevel(val);
+                          }
+                        }}
                         className="h-8 w-16 text-xs font-mono"
                         min="1"
                         max="9"
@@ -2119,11 +2137,15 @@ export function Tracker() {
                               type="number"
                               min="1"
                               value={newAbilityTotal}
-                              onChange={(e) =>
-                                setNewAbilityTotal(
-                                  parseInt(e.target.value) || 1,
-                                )
-                              }
+                              onChange={(e) => {
+                                const inputValue = e.target.value;
+                                if (inputValue === "") {
+                                  setNewAbilityTotal("");
+                                } else {
+                                  const val = parseInt(inputValue);
+                                  if (!isNaN(val)) setNewAbilityTotal(val);
+                                }
+                              }}
                             />
                           </div>
                         </div>
@@ -2519,11 +2541,15 @@ export function Tracker() {
                                 type="number"
                                 min="1"
                                 value={newInventoryCount}
-                                onChange={(e) =>
-                                  setNewInventoryCount(
-                                    parseInt(e.target.value) || 1,
-                                  )
-                                }
+                                onChange={(e) => {
+                                  const inputValue = e.target.value;
+                                  if (inputValue === "") {
+                                    setNewInventoryCount("");
+                                  } else {
+                                    const val = parseInt(inputValue);
+                                    if (!isNaN(val)) setNewInventoryCount(val);
+                                  }
+                                }}
                               />
                             </div>
                           </div>
