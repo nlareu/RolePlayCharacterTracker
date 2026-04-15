@@ -216,6 +216,7 @@ export function Tracker() {
   const [newAbilityDescription, setNewAbilityDescription] = useState("");
   const [isAddSpellOpen, setIsAddSpellOpen] = useState(false);
   const [newSpellName, setNewSpellName] = useState("");
+  const [newSpellDescription, setNewSpellDescription] = useState("");
   const [isEditingSpellSlots, setIsEditingSpellSlots] = useState(false);
   const [isEditingHitDice, setIsEditingHitDice] = useState(false);
   const [isEditingAbilities, setIsEditingAbilities] = useState(false);
@@ -1865,6 +1866,19 @@ export function Tracker() {
                             placeholder="e.g. Fire Bolt, Cure Wounds"
                           />
                         </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="spell-description">
+                            {t.description}
+                          </Label>
+                          <Input
+                            id="spell-description"
+                            value={newSpellDescription}
+                            onChange={(e) =>
+                              setNewSpellDescription(e.target.value)
+                            }
+                            placeholder={t.descriptionPlaceholder}
+                          />
+                        </div>
                       </div>
                       <DialogFooter>
                         <DialogClose
@@ -1881,7 +1895,12 @@ export function Tracker() {
                                       preparedSpells: prev.preparedSpells.map(
                                         (s) =>
                                           s.id === editingSpellId
-                                            ? { ...s, name: newSpellName }
+                                            ? {
+                                                ...s,
+                                                name: newSpellName,
+                                                description:
+                                                  newSpellDescription,
+                                              }
                                             : s,
                                       ),
                                     }));
@@ -1895,12 +1914,14 @@ export function Tracker() {
                                         {
                                           id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                                           name: newSpellName,
+                                          description: newSpellDescription,
                                           used: false,
                                         },
                                       ],
                                     }));
                                   }
                                   setNewSpellName("");
+                                  setNewSpellDescription("");
                                 }
                               }}
                             />
@@ -1934,11 +1955,18 @@ export function Tracker() {
                               className={`h-4 w-4 ${spell.used ? "text-muted-foreground" : "text-primary"}`}
                             />
                           </div>
-                          <span
-                            className={`font-medium text-sm truncate ${spell.used ? "text-muted-foreground line-through" : ""}`}
-                          >
-                            {spell.name}
-                          </span>
+                          <div className="min-w-0 flex-1">
+                            <span
+                              className={`font-medium text-sm block truncate ${spell.used ? "text-muted-foreground line-through" : ""}`}
+                            >
+                              {spell.name}
+                            </span>
+                            {spell.description && (
+                              <span className="text-xs text-muted-foreground line-clamp-1">
+                                {spell.description}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           {isEditingSpells ? (
@@ -1950,6 +1978,9 @@ export function Tracker() {
                                 onClick={() => {
                                   setEditingSpellId(spell.id);
                                   setNewSpellName(spell.name);
+                                  setNewSpellDescription(
+                                    spell.description || "",
+                                  );
                                   setIsAddSpellOpen(true);
                                 }}
                                 title="Edit"

@@ -33,6 +33,7 @@ export type Buff = {
 export type PreparedSpell = {
   id: string;
   name: string;
+  description?: string;
   used: boolean;
 };
 
