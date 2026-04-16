@@ -303,6 +303,11 @@ export function Tracker() {
     null,
   );
 
+  // Info dialogs for calculated fields
+  const [isInitiativeInfoOpen, setIsInitiativeInfoOpen] = useState(false);
+  const [isPassivePerceptionInfoOpen, setIsPassivePerceptionInfoOpen] =
+    useState(false);
+
   // Edit mode tracking
   const [editingBuffId, setEditingBuffId] = useState<string | null>(null);
   const [editingAbilityId, setEditingAbilityId] = useState<string | null>(null);
@@ -1312,9 +1317,20 @@ export function Tracker() {
                   {/* Initiative and Passive Perception Row */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">
-                        Initiative
-                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                          Initiative
+                        </Label>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-muted-foreground hover:text-primary shrink-0 p-0"
+                          onClick={() => setIsInitiativeInfoOpen(true)}
+                          title="How is Initiative calculated?"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
                         <span className="text-sm font-semibold font-mono">
                           {calculateModifier(
@@ -1331,9 +1347,20 @@ export function Tracker() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">
-                        Passive Perception
-                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                          Passive Perception
+                        </Label>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-muted-foreground hover:text-primary shrink-0 p-0"
+                          onClick={() => setIsPassivePerceptionInfoOpen(true)}
+                          title="How is Passive Perception calculated?"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
                         <span className="text-sm font-semibold font-mono">
                           {10 +
@@ -3639,6 +3666,163 @@ export function Tracker() {
           </div>
           <DialogFooter>
             <Button onClick={() => setSelectedBuff(null)}>{t.cancel}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isInitiativeInfoOpen}
+        onOpenChange={setIsInitiativeInfoOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Initiative Calculation</DialogTitle>
+            <DialogDescription>
+              Learn how your Initiative is calculated
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Formula:</h4>
+              <p className="text-sm bg-secondary/30 p-3 rounded font-mono">
+                Initiative = Dexterity Modifier
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Your Calculation:</h4>
+              <div className="bg-secondary/30 p-3 rounded space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Dexterity Score:</span>
+                  <span className="font-mono font-bold">
+                    {state.stats.find((s) => s.name === "dexterity")?.points ||
+                      10}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2">
+                  <span>Dexterity Modifier:</span>
+                  <span className="font-mono font-bold">
+                    {calculateModifier(
+                      state.stats.find((s) => s.name === "dexterity")?.points ||
+                        10,
+                    ) >= 0
+                      ? "+"
+                      : ""}
+                    {calculateModifier(
+                      state.stats.find((s) => s.name === "dexterity")?.points ||
+                        10,
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Your Initiative:</h4>
+              <p className="text-sm bg-blue-500/10 border border-blue-500 p-3 rounded font-mono font-bold">
+                {calculateModifier(
+                  state.stats.find((s) => s.name === "dexterity")?.points || 10,
+                ) >= 0
+                  ? "+"
+                  : ""}
+                {calculateModifier(
+                  state.stats.find((s) => s.name === "dexterity")?.points || 10,
+                )}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Initiative determines the order in which combatants take their
+              turns in battle. The higher your initiative, the sooner you get to
+              act!
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsInitiativeInfoOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isPassivePerceptionInfoOpen}
+        onOpenChange={setIsPassivePerceptionInfoOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Passive Perception Calculation</DialogTitle>
+            <DialogDescription>
+              Learn how your Passive Perception is calculated
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Formula:</h4>
+              <p className="text-sm bg-secondary/30 p-3 rounded font-mono">
+                Passive Perception = 10 + Proficiency Bonus + Wisdom Modifier
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Your Calculation:</h4>
+              <div className="bg-secondary/30 p-3 rounded space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Base DC:</span>
+                  <span className="font-mono font-bold">10</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Character Level:</span>
+                  <span className="font-mono font-bold">{state.level}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Proficiency Bonus:</span>
+                  <span className="font-mono font-bold">
+                    {calculateProficiencyBonus(state.level) >= 0 ? "+" : ""}
+                    {calculateProficiencyBonus(state.level)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Wisdom Score:</span>
+                  <span className="font-mono font-bold">
+                    {state.stats.find((s) => s.name === "wisdom")?.points || 10}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2">
+                  <span>Wisdom Modifier:</span>
+                  <span className="font-mono font-bold">
+                    {calculateModifier(
+                      state.stats.find((s) => s.name === "wisdom")?.points ||
+                        10,
+                    ) >= 0
+                      ? "+"
+                      : ""}
+                    {calculateModifier(
+                      state.stats.find((s) => s.name === "wisdom")?.points ||
+                        10,
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-2">
+                Your Passive Perception:
+              </h4>
+              <p className="text-sm bg-blue-500/10 border border-blue-500 p-3 rounded font-mono font-bold">
+                {10 +
+                  calculateProficiencyBonus(state.level) +
+                  calculateModifier(
+                    state.stats.find((s) => s.name === "wisdom")?.points || 10,
+                  )}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Passive Perception is how perceptive you are without actively
+              looking. It's used to detect hidden threats and notice details
+              you're not specifically searching for.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsPassivePerceptionInfoOpen(false)}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
