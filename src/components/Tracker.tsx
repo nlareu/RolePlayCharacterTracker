@@ -8,7 +8,7 @@ import {
   Plus,
   Minus,
   RotateCcw,
-  Star,
+  Hash,
   Trash2,
   Info,
   Settings2,
@@ -1143,7 +1143,7 @@ export function Tracker() {
           className="flex items-center gap-2"
           onClick={() => handleSectionChange("stats")}
         >
-          <Star className="h-4 w-4" />
+          <Hash className="h-4 w-4" />
           <span className="hidden sm:inline">{t.stats}</span>
         </Button>
         <Button
@@ -1176,7 +1176,7 @@ export function Tracker() {
                 case "inventory":
                   return <Package className="h-4 w-4" />;
                 case "stats":
-                  return <Star className="h-4 w-4" />;
+                  return <Hash className="h-4 w-4" />;
                 default:
                   return null;
               }
@@ -1230,14 +1230,14 @@ export function Tracker() {
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-end">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Star className="h-5 w-5 text-yellow-500" />
+                      <Hash className="h-5 w-5 text-yellow-500" />
                       {t.mainStats}
                     </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {state.stats && state.stats.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       {state.stats.map((stat) => (
                         <div
                           key={stat.name}
