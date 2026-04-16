@@ -1300,8 +1300,48 @@ export function Tracker() {
                       </Label>
                       <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
                         <span className="text-sm font-semibold font-mono">
-                          {calculateProficiencyBonus(state.level) >= 0 ? "+" : ""}
+                          {calculateProficiencyBonus(state.level) >= 0
+                            ? "+"
+                            : ""}
                           {calculateProficiencyBonus(state.level)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Initiative and Passive Perception Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                        Initiative
+                      </Label>
+                      <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
+                        <span className="text-sm font-semibold font-mono">
+                          {calculateModifier(
+                            state.stats.find((s) => s.name === "dexterity")
+                              ?.points || 10,
+                          ) >= 0
+                            ? "+"
+                            : ""}
+                          {calculateModifier(
+                            state.stats.find((s) => s.name === "dexterity")
+                              ?.points || 10,
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                        Passive Perception
+                      </Label>
+                      <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
+                        <span className="text-sm font-semibold font-mono">
+                          {10 +
+                            calculateProficiencyBonus(state.level) +
+                            calculateModifier(
+                              state.stats.find((s) => s.name === "wisdom")
+                                ?.points || 10,
+                            )}
                         </span>
                       </div>
                     </div>
