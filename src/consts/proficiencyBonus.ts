@@ -23,6 +23,16 @@ export const levelToProficiencyBonus: Record<number, number> = {
   18: 6,
   19: 6,
   20: 6,
+  21: 7,
+  22: 7,
+  23: 7,
+  24: 7,
+  25: 8,
+  26: 8,
+  27: 8,
+  28: 8,
+  29: 9,
+  30: 9,
 };
 
 /**
