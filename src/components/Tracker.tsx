@@ -1319,7 +1319,7 @@ export function Tracker() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Label className="text-xs uppercase text-muted-foreground tracking-wider">
-                          Initiative
+                          {t.initiative}
                         </Label>
                         <Button
                           variant="ghost"
@@ -3676,30 +3676,32 @@ export function Tracker() {
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Initiative Calculation</DialogTitle>
+            <DialogTitle>{t.initiativeCalculation}</DialogTitle>
             <DialogDescription>
-              Learn how your Initiative is calculated
+              {t.learnInitiativeCalculation}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
-              <h4 className="font-semibold text-sm mb-2">Formula:</h4>
+              <h4 className="font-semibold text-sm mb-2">{t.formula}</h4>
               <p className="text-sm bg-secondary/30 p-3 rounded font-mono">
-                Initiative = Dexterity Modifier
+                {t.initiativeFormula}
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-sm mb-2">Your Calculation:</h4>
+              <h4 className="font-semibold text-sm mb-2">
+                {t.yourCalculation}
+              </h4>
               <div className="bg-secondary/30 p-3 rounded space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Dexterity Score:</span>
+                  <span>{t.dexterityScore}</span>
                   <span className="font-mono font-bold">
                     {state.stats.find((s) => s.name === "dexterity")?.points ||
                       10}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm border-t pt-2">
-                  <span>Dexterity Modifier:</span>
+                  <span>{t.dexterityModifier}</span>
                   <span className="font-mono font-bold">
                     {calculateModifier(
                       state.stats.find((s) => s.name === "dexterity")?.points ||
@@ -3716,7 +3718,7 @@ export function Tracker() {
               </div>
             </div>
             <div>
-              <h4 className="font-semibold text-sm mb-2">Your Initiative:</h4>
+              <h4 className="font-semibold text-sm mb-2">{t.yourInitiative}</h4>
               <p className="text-sm bg-blue-500/10 border border-blue-500 p-3 rounded font-mono font-bold">
                 {calculateModifier(
                   state.stats.find((s) => s.name === "dexterity")?.points || 10,
@@ -3729,14 +3731,12 @@ export function Tracker() {
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Initiative determines the order in which combatants take their
-              turns in battle. The higher your initiative, the sooner you get to
-              act!
+              {t.initiativeDescription}
             </p>
           </div>
           <DialogFooter>
             <Button onClick={() => setIsInitiativeInfoOpen(false)}>
-              Close
+              {t.close}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3748,44 +3748,46 @@ export function Tracker() {
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Passive Perception Calculation</DialogTitle>
+            <DialogTitle>{t.passivePerceptionCalculation}</DialogTitle>
             <DialogDescription>
-              Learn how your Passive Perception is calculated
+              {t.learnPassivePerceptionCalculation}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
-              <h4 className="font-semibold text-sm mb-2">Formula:</h4>
+              <h4 className="font-semibold text-sm mb-2">{t.formula}</h4>
               <p className="text-sm bg-secondary/30 p-3 rounded font-mono">
-                Passive Perception = 10 + Proficiency Bonus + Wisdom Modifier
+                {t.passivePerceptionFormula}
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-sm mb-2">Your Calculation:</h4>
+              <h4 className="font-semibold text-sm mb-2">
+                {t.yourCalculation}
+              </h4>
               <div className="bg-secondary/30 p-3 rounded space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Base DC:</span>
+                  <span>{t.baseDC}</span>
                   <span className="font-mono font-bold">10</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Character Level:</span>
+                  <span>{t.characterLevel}</span>
                   <span className="font-mono font-bold">{state.level}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Proficiency Bonus:</span>
+                  <span>{t.proficiencyBonus}</span>
                   <span className="font-mono font-bold">
                     {calculateProficiencyBonus(state.level) >= 0 ? "+" : ""}
                     {calculateProficiencyBonus(state.level)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Wisdom Score:</span>
+                  <span>{t.wisdomScore}</span>
                   <span className="font-mono font-bold">
                     {state.stats.find((s) => s.name === "wisdom")?.points || 10}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm border-t pt-2">
-                  <span>Wisdom Modifier:</span>
+                  <span>{t.wisdomModifier}</span>
                   <span className="font-mono font-bold">
                     {calculateModifier(
                       state.stats.find((s) => s.name === "wisdom")?.points ||
@@ -3803,7 +3805,7 @@ export function Tracker() {
             </div>
             <div>
               <h4 className="font-semibold text-sm mb-2">
-                Your Passive Perception:
+                {t.yourPassivePerception}
               </h4>
               <p className="text-sm bg-blue-500/10 border border-blue-500 p-3 rounded font-mono font-bold">
                 {10 +
@@ -3814,14 +3816,12 @@ export function Tracker() {
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Passive Perception is how perceptive you are without actively
-              looking. It's used to detect hidden threats and notice details
-              you're not specifically searching for.
+              {t.passivePerceptionDescription}
             </p>
           </div>
           <DialogFooter>
             <Button onClick={() => setIsPassivePerceptionInfoOpen(false)}>
-              Close
+              {t.close}
             </Button>
           </DialogFooter>
         </DialogContent>

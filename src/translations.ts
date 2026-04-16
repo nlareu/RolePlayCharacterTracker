@@ -114,6 +114,30 @@ export const translations = {
     level: "Level",
     proficiencyBonus: "Proficiency",
     passivePerception: "Passive Perception",
+    initiative: "Initiative",
+    initiativeCalculation: "Initiative Calculation",
+    learnInitiativeCalculation: "Learn how your Initiative is calculated",
+    formula: "Formula:",
+    initiativeFormula: "Initiative = Dexterity Modifier",
+    yourCalculation: "Your Calculation:",
+    dexterityScore: "Dexterity Score:",
+    dexterityModifier: "Dexterity Modifier:",
+    yourInitiative: "Your Initiative:",
+    initiativeDescription:
+      "Initiative determines the order in which combatants take their turns in battle. The higher your initiative, the sooner you get to act!",
+    passivePerceptionCalculation: "Passive Perception Calculation",
+    learnPassivePerceptionCalculation:
+      "Learn how your Passive Perception is calculated",
+    passivePerceptionFormula:
+      "Passive Perception = 10 + Proficiency Bonus + Wisdom Modifier",
+    baseDC: "Base DC:",
+    characterLevel: "Character Level:",
+    wisdomScore: "Wisdom Score:",
+    wisdomModifier: "Wisdom Modifier:",
+    yourPassivePerception: "Your Passive Perception:",
+    passivePerceptionDescription:
+      "Passive Perception is how perceptive you are without actively looking. It's used to detect hidden threats and notice details you're not specifically searching for.",
+    close: "Close",
   },
   es: {
     characterTracker: "Seguimiento de Personaje",
@@ -229,5 +253,29 @@ export const translations = {
     level: "Nivel",
     proficiencyBonus: "Bonificador",
     passivePerception: "Percepción Pasiva",
+    initiative: "Iniciativa",
+    initiativeCalculation: "Cálculo de Iniciativa",
+    learnInitiativeCalculation: "Aprende cómo se calcula tu Iniciativa",
+    formula: "Fórmula:",
+    initiativeFormula: "Iniciativa = Modificador de Destreza",
+    yourCalculation: "Tu Cálculo:",
+    dexterityScore: "Puntuación de Destreza:",
+    dexterityModifier: "Modificador de Destreza:",
+    yourInitiative: "Tu Iniciativa:",
+    initiativeDescription:
+      "La Iniciativa determina el orden en que los combatientes actúan en la batalla. Cuanto mayor sea tu iniciativa, antes podrás actuar.",
+    passivePerceptionCalculation: "Cálculo de Percepción Pasiva",
+    learnPassivePerceptionCalculation:
+      "Aprende cómo se calcula tu Percepción Pasiva",
+    passivePerceptionFormula:
+      "Percepción Pasiva = 10 + Bonificador de Competencia + Modificador de Sabiduría",
+    baseDC: "DC Base:",
+    characterLevel: "Nivel del Personaje:",
+    wisdomScore: "Puntuación de Sabiduría:",
+    wisdomModifier: "Modificador de Sabiduría:",
+    yourPassivePerception: "Tu Percepción Pasiva:",
+    passivePerceptionDescription:
+      "La Percepción Pasiva es lo perceptivo que eres sin buscar activamente. Se utiliza para detectar amenazas ocultas y notar detalles que no estás buscando específicamente.",
+    close: "Cerrar",
   },
 };
