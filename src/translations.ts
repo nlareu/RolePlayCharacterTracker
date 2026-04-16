@@ -112,7 +112,8 @@ export const translations = {
     modifier: "Modifier",
     pointsValue: "Points",
     level: "Level",
-    proficiencyBonus: "Proficiency Bonus",
+    proficiencyBonus: "Proficiency",
+    passivePerception: "Passive Perception",
   },
   es: {
     characterTracker: "Seguimiento de Personaje",
@@ -226,6 +227,7 @@ export const translations = {
     modifier: "Modificador",
     pointsValue: "Puntos",
     level: "Nivel",
-    proficiencyBonus: "Bonificación de Pericia",
+    proficiencyBonus: "Bonificador",
+    passivePerception: "Percepción Pasiva",
   },
 };

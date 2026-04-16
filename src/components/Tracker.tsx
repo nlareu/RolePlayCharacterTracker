@@ -1300,7 +1300,7 @@ export function Tracker() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                      <Label className="text-xs uppercase text-muted-foreground tracking-wider min-w-0 truncate">
                         {t.proficiencyBonus}
                       </Label>
                       <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
@@ -1348,8 +1348,8 @@ export function Tracker() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Label className="text-xs uppercase text-muted-foreground tracking-wider">
-                          Passive Perception
+                        <Label className="text-xs uppercase text-muted-foreground tracking-wider min-w-0 truncate">
+                          {t.passivePerception}
                         </Label>
                         <Button
                           variant="ghost"
