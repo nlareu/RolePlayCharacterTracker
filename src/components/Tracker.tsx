@@ -80,14 +80,24 @@ import {
   InventoryItem,
   PreparedSpell,
   Spell,
+  Stat,
 } from "../types";
 import { translations, Language } from "../translations";
+import { calculateModifier } from "../consts/statModifiers";
 
 const INITIAL_STATE: CharacterState = {
   id: "default",
   name: "Aventurero",
   hp: { current: 25, max: 25, temp: 0 },
   deathSaves: { successes: 0, failures: 0 },
+  stats: [
+    { name: "strength", points: 10 },
+    { name: "dexterity", points: 10 },
+    { name: "constitution", points: 10 },
+    { name: "intelligence", points: 10 },
+    { name: "wisdom", points: 10 },
+    { name: "charisma", points: 10 },
+  ],
   spellSlots: [
     { level: 1, total: 4, used: 0, spells: [] },
     { level: 2, total: 3, used: 0, spells: [] },
@@ -117,6 +127,8 @@ export function Tracker() {
             .map((char) => ({
               ...INITIAL_STATE,
               ...char,
+              // Ensure stats are initialized
+              stats: char.stats || INITIAL_STATE.stats,
               // Deduplicate spell slots just in case
               spellSlots: char.spellSlots
                 ? char.spellSlots.filter(
@@ -146,6 +158,7 @@ export function Tracker() {
           ...INITIAL_STATE,
           ...parsed,
           id: parsed.id || "legacy",
+          stats: parsed.stats || INITIAL_STATE.stats,
           spellSlots: parsed.spellSlots
             ? parsed.spellSlots.filter(
                 (s: SpellSlot, i: number, self: SpellSlot[]) =>
@@ -180,22 +193,39 @@ export function Tracker() {
     return characters[0]?.id || "default";
   });
 
-  const tabOrder = ["combat", "magic", "abilities", "inventory"] as const;
-  const [activeTab, setActiveTab] = useState<string>("combat");
+  // Section types
+  type SectionType = "stats" | "game";
+  type Subsection = string;
+
+  // Define section structure
+  const sections: Record<SectionType, Subsection[]> = {
+    stats: ["stats"],
+    game: ["combat", "magic", "abilities", "inventory"],
+  };
+
+  const [activeSection, setActiveSection] = useState<SectionType>("game");
+  const [activeSubsection, setActiveSubsection] = useState<string>("combat");
   const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(
     null,
   );
 
-  const moveTab = (direction: "left" | "right") => {
-    const currentIndex = tabOrder.indexOf(activeTab as any);
+  // When section changes, set subsection to first subsection of that section
+  const handleSectionChange = (section: SectionType) => {
+    setActiveSection(section);
+    setActiveSubsection(sections[section][0]);
+  };
+
+  const moveSubsection = (direction: "left" | "right") => {
+    const subsections = sections[activeSection];
+    const currentIndex = subsections.indexOf(activeSubsection);
     if (currentIndex === -1) return;
 
     let nextIndex = currentIndex + (direction === "right" ? 1 : -1);
-    if (nextIndex < 0) nextIndex = tabOrder.length - 1;
-    if (nextIndex >= tabOrder.length) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = subsections.length - 1;
+    if (nextIndex >= subsections.length) nextIndex = 0;
 
     setSlideDirection(direction);
-    setActiveTab(tabOrder[nextIndex]);
+    setActiveSubsection(subsections[nextIndex]);
   };
 
   const state =
@@ -358,16 +388,16 @@ export function Tracker() {
 
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        moveTab("left");
+        moveSubsection("left");
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        moveTab("right");
+        moveSubsection("right");
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab]);
+  }, [activeSubsection, activeSection]);
 
   // Swipe gesture detection for mobile
   useEffect(() => {
@@ -383,13 +413,13 @@ export function Tracker() {
       touchEndX = e.changedTouches[0].screenX;
       const diffX = touchStartX - touchEndX;
 
-      // Swipe left (negative diff means swiping right, which shows previous tab)
+      // Swipe left (negative diff means swiping right, which shows previous subsection)
       if (diffX > minSwipeDistance) {
-        moveTab("right");
+        moveSubsection("right");
       }
-      // Swipe right (positive diff means swiping left, which shows next tab)
+      // Swipe right (positive diff means swiping left, which shows next subsection)
       else if (diffX < -minSwipeDistance) {
-        moveTab("left");
+        moveSubsection("left");
       }
     };
 
@@ -400,7 +430,7 @@ export function Tracker() {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [activeTab]);
+  }, [activeSubsection, activeSection]);
 
   // Calculate animation values based on slide direction
   const getSlideVariant = () => {
@@ -1106,30 +1136,220 @@ export function Tracker() {
         </div>
       </header>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-12">
-          <TabsTrigger value="combat" className="flex items-center gap-2">
-            <Sword className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.combat}</span>
-          </TabsTrigger>
-          <TabsTrigger value="magic" className="flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.magic}</span>
-          </TabsTrigger>
-          <TabsTrigger value="abilities" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.abilities}</span>
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.inventory}</span>
-          </TabsTrigger>
+      {/* Section Selector */}
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant={activeSection === "stats" ? "default" : "outline"}
+          className="flex items-center gap-2"
+          onClick={() => handleSectionChange("stats")}
+        >
+          <Star className="h-4 w-4" />
+          <span className="hidden sm:inline">{t.stats}</span>
+        </Button>
+        <Button
+          variant={activeSection === "game" ? "default" : "outline"}
+          className="flex items-center gap-2"
+          onClick={() => handleSectionChange("game")}
+        >
+          <Sword className="h-4 w-4" />
+          <span className="hidden sm:inline">Game</span>
+        </Button>
+      </div>
+
+      <Tabs
+        value={activeSubsection}
+        onValueChange={setActiveSubsection}
+        className="w-full"
+      >
+        <TabsList
+          className={`grid w-full ${activeSection === "stats" ? "grid-cols-1" : "grid-cols-4"} h-12`}
+        >
+          {sections[activeSection].map((subsection) => {
+            const getIcon = (name: string) => {
+              switch (name) {
+                case "combat":
+                  return <Sword className="h-4 w-4" />;
+                case "magic":
+                  return <Zap className="h-4 w-4" />;
+                case "abilities":
+                  return <Shield className="h-4 w-4" />;
+                case "inventory":
+                  return <Package className="h-4 w-4" />;
+                case "stats":
+                  return <Star className="h-4 w-4" />;
+                default:
+                  return null;
+              }
+            };
+
+            const getLabel = (name: string) => {
+              switch (name) {
+                case "combat":
+                  return t.combat;
+                case "magic":
+                  return t.magic;
+                case "abilities":
+                  return t.abilities;
+                case "inventory":
+                  return t.inventory;
+                case "stats":
+                  return t.mainStats;
+                default:
+                  return name;
+              }
+            };
+
+            return (
+              <TabsTrigger
+                key={subsection}
+                value={subsection}
+                className="flex items-center gap-2"
+              >
+                {getIcon(subsection)}
+                <span className="hidden sm:inline">{getLabel(subsection)}</span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         <AnimatePresence mode="wait">
-          <TabsContent value="combat" className="mt-4 space-y-4">
+          {/* Stats Subsection */}
+          <TabsContent
+            value="stats"
+            key="stats-subsection"
+            className="mt-4 space-y-4"
+          >
             <motion.div
-              key={`combat-${activeTab}`}
+              key={`stats-${activeSubsection}`}
+              initial={slideVariant.initial}
+              animate={slideVariant.animate}
+              exit={slideVariant.exit}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+            >
+              <Card className="border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-end">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Star className="h-5 w-5 text-yellow-500" />
+                      {t.mainStats}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {state.stats && state.stats.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {state.stats.map((stat) => (
+                        <div
+                          key={stat.name}
+                          className="p-3 rounded-lg bg-secondary/30 border border-border/50 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold capitalize">
+                              {stat.name === "strength"
+                                ? t.strength
+                                : stat.name === "dexterity"
+                                  ? t.dexterity
+                                  : stat.name === "constitution"
+                                    ? t.constitution
+                                    : stat.name === "intelligence"
+                                      ? t.intelligence
+                                      : stat.name === "wisdom"
+                                        ? t.wisdom
+                                        : stat.name === "charisma"
+                                          ? t.charisma
+                                          : stat.name}
+                            </Label>
+                            <Badge
+                              variant="outline"
+                              className={`${calculateModifier(stat.points) >= 0 ? "border-green-500/50 text-green-600 dark:text-green-400" : "border-red-500/50 text-red-600 dark:text-red-400"}`}
+                            >
+                              {calculateModifier(stat.points) >= 0 ? "+" : ""}
+                              {calculateModifier(stat.points)}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                const newPoints = Math.max(1, stat.points - 1);
+                                setState((prev) => ({
+                                  ...prev,
+                                  stats: prev.stats.map((s) =>
+                                    s.name === stat.name
+                                      ? { ...s, points: newPoints }
+                                      : s,
+                                  ),
+                                }));
+                              }}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="30"
+                              value={stat.points}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                if (
+                                  !isNaN(value) &&
+                                  value >= 1 &&
+                                  value <= 30
+                                ) {
+                                  setState((prev) => ({
+                                    ...prev,
+                                    stats: prev.stats.map((s) =>
+                                      s.name === stat.name
+                                        ? { ...s, points: value }
+                                        : s,
+                                    ),
+                                  }));
+                                }
+                              }}
+                              className="h-8 text-center font-mono flex-1"
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                const newPoints = Math.min(30, stat.points + 1);
+                                setState((prev) => ({
+                                  ...prev,
+                                  stats: prev.stats.map((s) =>
+                                    s.name === stat.name
+                                      ? { ...s, points: newPoints }
+                                      : s,
+                                  ),
+                                }));
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      No stats data
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Combat Subsection */}
+          <TabsContent
+            value="combat"
+            key="combat-subsection"
+            className="mt-4 space-y-4"
+          >
+            <motion.div
+              key={`combat-${activeSubsection}`}
               initial={slideVariant.initial}
               animate={slideVariant.animate}
               exit={slideVariant.exit}
@@ -1743,9 +1963,13 @@ export function Tracker() {
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="magic" className="mt-4 space-y-4">
+          <TabsContent
+            value="magic"
+            className="mt-4 space-y-4"
+            key="magic-subsection"
+          >
             <motion.div
-              key={`magic-${activeTab}`}
+              key={`magic-${activeSubsection}`}
               initial={slideVariant.initial}
               animate={slideVariant.animate}
               exit={slideVariant.exit}
@@ -2406,9 +2630,13 @@ export function Tracker() {
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="abilities" className="mt-4 space-y-4">
+          <TabsContent
+            value="abilities"
+            className="mt-4 space-y-4"
+            key="abilities-subsection"
+          >
             <motion.div
-              key={`abilities-${activeTab}`}
+              key={`abilities-${activeSubsection}`}
               initial={slideVariant.initial}
               animate={slideVariant.animate}
               exit={slideVariant.exit}
@@ -2874,9 +3102,13 @@ export function Tracker() {
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="inventory" className="mt-4 space-y-4">
+          <TabsContent
+            value="inventory"
+            className="mt-4 space-y-4"
+            key="inventory-subsection"
+          >
             <motion.div
-              key={`inventory-${activeTab}`}
+              key={`inventory-${activeSubsection}`}
               initial={slideVariant.initial}
               animate={slideVariant.animate}
               exit={slideVariant.exit}

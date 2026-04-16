@@ -56,6 +56,17 @@ export type DeathSaves = {
   failures: number;
 };
 
+export type Stat = {
+  name:
+    | "strength"
+    | "dexterity"
+    | "constitution"
+    | "intelligence"
+    | "wisdom"
+    | "charisma";
+  points: number;
+};
+
 export type CharacterState = {
   id: string;
   name: string;
@@ -65,6 +76,7 @@ export type CharacterState = {
     temp: number;
   };
   deathSaves: DeathSaves;
+  stats: Stat[];
   spellSlots: SpellSlot[];
   hitDice: HitDice[];
   abilities: Ability[];
