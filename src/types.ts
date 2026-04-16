@@ -70,6 +70,7 @@ export type Stat = {
 export type CharacterState = {
   id: string;
   name: string;
+  level: number;
   hp: {
     current: number;
     max: number;

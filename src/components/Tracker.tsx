@@ -84,10 +84,12 @@ import {
 } from "../types";
 import { translations, Language } from "../translations";
 import { calculateModifier } from "../consts/statModifiers";
+import { calculateProficiencyBonus } from "../consts/proficiencyBonus";
 
 const INITIAL_STATE: CharacterState = {
   id: "default",
   name: "Aventurero",
+  level: 1,
   hp: { current: 25, max: 25, temp: 0 },
   deathSaves: { successes: 0, failures: 0 },
   stats: [
@@ -127,6 +129,8 @@ export function Tracker() {
             .map((char) => ({
               ...INITIAL_STATE,
               ...char,
+              // Ensure level is initialized
+              level: char.level || INITIAL_STATE.level,
               // Ensure stats are initialized
               stats: char.stats || INITIAL_STATE.stats,
               // Deduplicate spell slots just in case
@@ -158,6 +162,7 @@ export function Tracker() {
           ...INITIAL_STATE,
           ...parsed,
           id: parsed.id || "legacy",
+          level: parsed.level || INITIAL_STATE.level,
           stats: parsed.stats || INITIAL_STATE.stats,
           spellSlots: parsed.spellSlots
             ? parsed.spellSlots.filter(
@@ -1236,6 +1241,75 @@ export function Tracker() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Level and Proficiency Bonus Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                        {t.level}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const newLevel = Math.max(1, state.level - 1);
+                            setState((prev) => ({
+                              ...prev,
+                              level: newLevel,
+                            }));
+                          }}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={state.level}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            if (!isNaN(value) && value >= 1 && value <= 20) {
+                              setState((prev) => ({
+                                ...prev,
+                                level: value,
+                              }));
+                            }
+                          }}
+                          className="h-8 text-center font-mono flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const newLevel = Math.min(20, state.level + 1);
+                            setState((prev) => ({
+                              ...prev,
+                              level: newLevel,
+                            }));
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                        {t.proficiencyBonus}
+                      </Label>
+                      <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
+                        <span className="text-sm font-semibold font-mono">
+                          {calculateProficiencyBonus(state.level) >= 0 ? "+" : ""}
+                          {calculateProficiencyBonus(state.level)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator className="my-2" />
+
+                  {/* Main Stats Grid */}
                   {state.stats && state.stats.length > 0 ? (
                     <div className="grid grid-cols-2 gap-4">
                       {state.stats.map((stat) => (

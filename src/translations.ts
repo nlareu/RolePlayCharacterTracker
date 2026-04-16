@@ -111,6 +111,8 @@ export const translations = {
     charisma: "Charisma",
     modifier: "Modifier",
     pointsValue: "Points",
+    level: "Level",
+    proficiencyBonus: "Proficiency Bonus",
   },
   es: {
     characterTracker: "Seguimiento de Personaje",
@@ -223,5 +225,7 @@ export const translations = {
     charisma: "Carisma",
     modifier: "Modificador",
     pointsValue: "Puntos",
+    level: "Nivel",
+    proficiencyBonus: "Bonificación de Pericia",
   },
 };
