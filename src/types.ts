@@ -56,19 +56,55 @@ export type DeathSaves = {
   failures: number;
 };
 
+export type Stat = {
+  name:
+    | "strength"
+    | "dexterity"
+    | "constitution"
+    | "intelligence"
+    | "wisdom"
+    | "charisma";
+  points: number;
+};
+
+export type SkillProficiency = "none" | "competence" | "expertise";
+
+export type SkillName =
+  | "acrobatics"
+  | "animalHandling"
+  | "arcana"
+  | "athletics"
+  | "deception"
+  | "history"
+  | "insight"
+  | "intimidation"
+  | "investigation"
+  | "medicine"
+  | "nature"
+  | "perception"
+  | "performance"
+  | "persuasion"
+  | "religion"
+  | "sleightOfHand"
+  | "stealth"
+  | "survival";
+
 export type CharacterState = {
   id: string;
   name: string;
+  level: number;
   hp: {
     current: number;
     max: number;
     temp: number;
   };
   deathSaves: DeathSaves;
+  stats: Stat[];
   spellSlots: SpellSlot[];
   hitDice: HitDice[];
   abilities: Ability[];
   buffs: Buff[];
   preparedSpells: PreparedSpell[];
   inventory: InventoryItem[];
+  skillProficiencies: Record<SkillName, SkillProficiency>;
 };

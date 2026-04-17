@@ -8,7 +8,7 @@ import {
   Plus,
   Minus,
   RotateCcw,
-  Star,
+  Hash,
   Trash2,
   Info,
   Settings2,
@@ -25,6 +25,7 @@ import {
   Pencil,
   Download,
   Upload,
+  Target,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -80,14 +81,41 @@ import {
   InventoryItem,
   PreparedSpell,
   Spell,
+  Stat,
+  SkillName,
+  SkillProficiency,
 } from "../types";
 import { translations, Language } from "../translations";
+import { calculateModifier } from "../consts/statModifiers";
+import { calculateProficiencyBonus } from "../consts/proficiencyBonus";
+import { SKILLS } from "../consts/skills";
+
+// Helper function to create initial skill proficiencies
+const createInitialSkillProficiencies = (): Record<
+  SkillName,
+  SkillProficiency
+> => {
+  const proficiencies: Record<string, SkillProficiency> = {};
+  SKILLS.forEach((skill) => {
+    proficiencies[skill.name] = "none";
+  });
+  return proficiencies as Record<SkillName, SkillProficiency>;
+};
 
 const INITIAL_STATE: CharacterState = {
   id: "default",
   name: "Aventurero",
+  level: 1,
   hp: { current: 25, max: 25, temp: 0 },
   deathSaves: { successes: 0, failures: 0 },
+  stats: [
+    { name: "strength", points: 10 },
+    { name: "dexterity", points: 10 },
+    { name: "constitution", points: 10 },
+    { name: "intelligence", points: 10 },
+    { name: "wisdom", points: 10 },
+    { name: "charisma", points: 10 },
+  ],
   spellSlots: [
     { level: 1, total: 4, used: 0, spells: [] },
     { level: 2, total: 3, used: 0, spells: [] },
@@ -98,6 +126,7 @@ const INITIAL_STATE: CharacterState = {
   buffs: [],
   preparedSpells: [],
   inventory: [],
+  skillProficiencies: createInitialSkillProficiencies(),
 };
 
 export function Tracker() {
@@ -117,6 +146,10 @@ export function Tracker() {
             .map((char) => ({
               ...INITIAL_STATE,
               ...char,
+              // Ensure level is initialized
+              level: char.level || INITIAL_STATE.level,
+              // Ensure stats are initialized
+              stats: char.stats || INITIAL_STATE.stats,
               // Deduplicate spell slots just in case
               spellSlots: char.spellSlots
                 ? char.spellSlots.filter(
@@ -131,6 +164,11 @@ export function Tracker() {
                     id: hd.id || `hd-${i}`,
                   }))
                 : INITIAL_STATE.hitDice,
+              // Merge skill proficiencies with defaults
+              skillProficiencies: {
+                ...createInitialSkillProficiencies(),
+                ...(char.skillProficiencies || {}),
+              },
             }));
         }
       } catch (e) {
@@ -146,6 +184,8 @@ export function Tracker() {
           ...INITIAL_STATE,
           ...parsed,
           id: parsed.id || "legacy",
+          level: parsed.level || INITIAL_STATE.level,
+          stats: parsed.stats || INITIAL_STATE.stats,
           spellSlots: parsed.spellSlots
             ? parsed.spellSlots.filter(
                 (s: SpellSlot, i: number, self: SpellSlot[]) =>
@@ -158,6 +198,11 @@ export function Tracker() {
                 id: hd.id || `hd-${i}`,
               }))
             : INITIAL_STATE.hitDice,
+          // Merge skill proficiencies with defaults
+          skillProficiencies: {
+            ...createInitialSkillProficiencies(),
+            ...(parsed.skillProficiencies || {}),
+          },
         };
         return [char];
       } catch (e) {
@@ -180,22 +225,39 @@ export function Tracker() {
     return characters[0]?.id || "default";
   });
 
-  const tabOrder = ["combat", "magic", "abilities", "inventory"] as const;
-  const [activeTab, setActiveTab] = useState<string>("combat");
+  // Section types
+  type SectionType = "stats" | "game";
+  type Subsection = string;
+
+  // Define section structure
+  const sections: Record<SectionType, Subsection[]> = {
+    stats: ["stats", "skills"],
+    game: ["combat", "magic", "abilities", "inventory"],
+  };
+
+  const [activeSection, setActiveSection] = useState<SectionType>("game");
+  const [activeSubsection, setActiveSubsection] = useState<string>("combat");
   const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(
     null,
   );
 
-  const moveTab = (direction: "left" | "right") => {
-    const currentIndex = tabOrder.indexOf(activeTab as any);
+  // When section changes, set subsection to first subsection of that section
+  const handleSectionChange = (section: SectionType) => {
+    setActiveSection(section);
+    setActiveSubsection(sections[section][0]);
+  };
+
+  const moveSubsection = (direction: "left" | "right") => {
+    const subsections = sections[activeSection];
+    const currentIndex = subsections.indexOf(activeSubsection);
     if (currentIndex === -1) return;
 
     let nextIndex = currentIndex + (direction === "right" ? 1 : -1);
-    if (nextIndex < 0) nextIndex = tabOrder.length - 1;
-    if (nextIndex >= tabOrder.length) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = subsections.length - 1;
+    if (nextIndex >= subsections.length) nextIndex = 0;
 
     setSlideDirection(direction);
-    setActiveTab(tabOrder[nextIndex]);
+    setActiveSubsection(subsections[nextIndex]);
   };
 
   const state =
@@ -267,6 +329,11 @@ export function Tracker() {
   const [editingSlotSpellId, setEditingSlotSpellId] = useState<string | null>(
     null,
   );
+
+  // Info dialogs for calculated fields
+  const [isInitiativeInfoOpen, setIsInitiativeInfoOpen] = useState(false);
+  const [isPassivePerceptionInfoOpen, setIsPassivePerceptionInfoOpen] =
+    useState(false);
 
   // Edit mode tracking
   const [editingBuffId, setEditingBuffId] = useState<string | null>(null);
@@ -358,16 +425,16 @@ export function Tracker() {
 
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        moveTab("left");
+        moveSubsection("left");
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        moveTab("right");
+        moveSubsection("right");
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab]);
+  }, [activeSubsection, activeSection]);
 
   // Swipe gesture detection for mobile
   useEffect(() => {
@@ -383,13 +450,13 @@ export function Tracker() {
       touchEndX = e.changedTouches[0].screenX;
       const diffX = touchStartX - touchEndX;
 
-      // Swipe left (negative diff means swiping right, which shows previous tab)
+      // Swipe left (negative diff means swiping right, which shows previous subsection)
       if (diffX > minSwipeDistance) {
-        moveTab("right");
+        moveSubsection("right");
       }
-      // Swipe right (positive diff means swiping left, which shows next tab)
+      // Swipe right (positive diff means swiping left, which shows next subsection)
       else if (diffX < -minSwipeDistance) {
-        moveTab("left");
+        moveSubsection("left");
       }
     };
 
@@ -400,7 +467,7 @@ export function Tracker() {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [activeTab]);
+  }, [activeSubsection, activeSection]);
 
   // Calculate animation values based on slide direction
   const getSlideVariant = () => {
@@ -1106,30 +1173,522 @@ export function Tracker() {
         </div>
       </header>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-12">
-          <TabsTrigger value="combat" className="flex items-center gap-2">
-            <Sword className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.combat}</span>
-          </TabsTrigger>
-          <TabsTrigger value="magic" className="flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.magic}</span>
-          </TabsTrigger>
-          <TabsTrigger value="abilities" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.abilities}</span>
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.inventory}</span>
-          </TabsTrigger>
+      {/* Section Selector */}
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant={activeSection === "stats" ? "default" : "outline"}
+          className="flex items-center gap-2"
+          onClick={() => handleSectionChange("stats")}
+        >
+          <Hash className="h-4 w-4" />
+          <span className="hidden sm:inline">{t.stats}</span>
+        </Button>
+        <Button
+          variant={activeSection === "game" ? "default" : "outline"}
+          className="flex items-center gap-2"
+          onClick={() => handleSectionChange("game")}
+        >
+          <Sword className="h-4 w-4" />
+          <span className="hidden sm:inline">Game</span>
+        </Button>
+      </div>
+
+      <Tabs
+        value={activeSubsection}
+        onValueChange={setActiveSubsection}
+        className="w-full"
+      >
+        <TabsList
+          className={`grid w-full ${activeSection === "stats" ? "grid-cols-2" : "grid-cols-4"} h-12`}
+        >
+          {sections[activeSection].map((subsection) => {
+            const getIcon = (name: string) => {
+              switch (name) {
+                case "combat":
+                  return <Sword className="h-4 w-4" />;
+                case "magic":
+                  return <Zap className="h-4 w-4" />;
+                case "abilities":
+                  return <Shield className="h-4 w-4" />;
+                case "inventory":
+                  return <Package className="h-4 w-4" />;
+                case "stats":
+                  return <Hash className="h-4 w-4" />;
+                case "skills":
+                  return <Target className="h-4 w-4" />;
+                default:
+                  return null;
+              }
+            };
+
+            const getLabel = (name: string) => {
+              switch (name) {
+                case "combat":
+                  return t.combat;
+                case "magic":
+                  return t.magic;
+                case "abilities":
+                  return t.abilities;
+                case "inventory":
+                  return t.inventory;
+                case "stats":
+                  return t.mainStats;
+                case "skills":
+                  return t.skills;
+                default:
+                  return name;
+              }
+            };
+
+            return (
+              <TabsTrigger
+                key={subsection}
+                value={subsection}
+                className="flex items-center gap-2"
+              >
+                {getIcon(subsection)}
+                <span className="hidden sm:inline">{getLabel(subsection)}</span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         <AnimatePresence mode="wait">
-          <TabsContent value="combat" className="mt-4 space-y-4">
+          {/* Stats Subsection */}
+          <TabsContent
+            value="stats"
+            key="stats-subsection"
+            className="mt-4 space-y-4"
+          >
             <motion.div
-              key={`combat-${activeTab}`}
+              key={`stats-${activeSubsection}`}
+              initial={slideVariant.initial}
+              animate={slideVariant.animate}
+              exit={slideVariant.exit}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+            >
+              <Card className="border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-end">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Hash className="h-5 w-5 text-yellow-500" />
+                      {t.mainStats}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Level and Proficiency Bonus Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                        {t.level}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const newLevel = Math.max(1, state.level - 1);
+                            setState((prev) => ({
+                              ...prev,
+                              level: newLevel,
+                            }));
+                          }}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={state.level}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            if (!isNaN(value) && value >= 1 && value <= 20) {
+                              setState((prev) => ({
+                                ...prev,
+                                level: value,
+                              }));
+                            }
+                          }}
+                          className="h-8 text-center font-mono flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const newLevel = Math.min(20, state.level + 1);
+                            setState((prev) => ({
+                              ...prev,
+                              level: newLevel,
+                            }));
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase text-muted-foreground tracking-wider min-w-0 truncate">
+                        {t.proficiencyBonus}
+                      </Label>
+                      <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
+                        <span className="text-sm font-semibold font-mono">
+                          {calculateProficiencyBonus(state.level) >= 0
+                            ? "+"
+                            : ""}
+                          {calculateProficiencyBonus(state.level)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Initiative and Passive Perception Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs uppercase text-muted-foreground tracking-wider">
+                          {t.initiative}
+                        </Label>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-muted-foreground hover:text-primary shrink-0 p-0"
+                          onClick={() => setIsInitiativeInfoOpen(true)}
+                          title="How is Initiative calculated?"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
+                        <span className="text-sm font-semibold font-mono">
+                          {calculateModifier(
+                            state.stats.find((s) => s.name === "dexterity")
+                              ?.points || 10,
+                          ) >= 0
+                            ? "+"
+                            : ""}
+                          {calculateModifier(
+                            state.stats.find((s) => s.name === "dexterity")
+                              ?.points || 10,
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs uppercase text-muted-foreground tracking-wider min-w-0 truncate">
+                          {t.passivePerception}
+                        </Label>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-muted-foreground hover:text-primary shrink-0 p-0"
+                          onClick={() => setIsPassivePerceptionInfoOpen(true)}
+                          title="How is Passive Perception calculated?"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-center h-8 rounded-md border border-border/50 bg-secondary/30 px-3">
+                        <span className="text-sm font-semibold font-mono">
+                          {10 +
+                            calculateProficiencyBonus(state.level) +
+                            calculateModifier(
+                              state.stats.find((s) => s.name === "wisdom")
+                                ?.points || 10,
+                            )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator className="my-2" />
+
+                  {/* Main Stats Grid */}
+                  {state.stats && state.stats.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      {state.stats.map((stat) => (
+                        <div
+                          key={stat.name}
+                          className="p-3 rounded-lg bg-secondary/30 border border-border/50 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold capitalize">
+                              {stat.name === "strength"
+                                ? t.strength
+                                : stat.name === "dexterity"
+                                  ? t.dexterity
+                                  : stat.name === "constitution"
+                                    ? t.constitution
+                                    : stat.name === "intelligence"
+                                      ? t.intelligence
+                                      : stat.name === "wisdom"
+                                        ? t.wisdom
+                                        : stat.name === "charisma"
+                                          ? t.charisma
+                                          : stat.name}
+                            </Label>
+                            <Badge
+                              variant="outline"
+                              className={`${calculateModifier(stat.points) >= 0 ? "border-green-500/50 text-green-600 dark:text-green-400" : "border-red-500/50 text-red-600 dark:text-red-400"}`}
+                            >
+                              {calculateModifier(stat.points) >= 0 ? "+" : ""}
+                              {calculateModifier(stat.points)}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                const newPoints = Math.max(1, stat.points - 1);
+                                setState((prev) => ({
+                                  ...prev,
+                                  stats: prev.stats.map((s) =>
+                                    s.name === stat.name
+                                      ? { ...s, points: newPoints }
+                                      : s,
+                                  ),
+                                }));
+                              }}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="30"
+                              value={stat.points}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                if (
+                                  !isNaN(value) &&
+                                  value >= 1 &&
+                                  value <= 30
+                                ) {
+                                  setState((prev) => ({
+                                    ...prev,
+                                    stats: prev.stats.map((s) =>
+                                      s.name === stat.name
+                                        ? { ...s, points: value }
+                                        : s,
+                                    ),
+                                  }));
+                                }
+                              }}
+                              className="h-8 text-center font-mono flex-1"
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                const newPoints = Math.min(30, stat.points + 1);
+                                setState((prev) => ({
+                                  ...prev,
+                                  stats: prev.stats.map((s) =>
+                                    s.name === stat.name
+                                      ? { ...s, points: newPoints }
+                                      : s,
+                                  ),
+                                }));
+                              }}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      No stats data
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Skills Subsection */}
+          <TabsContent
+            value="skills"
+            key="skills-subsection"
+            className="mt-4 space-y-4"
+          >
+            <motion.div
+              key={`skills-${activeSubsection}`}
+              initial={slideVariant.initial}
+              animate={slideVariant.animate}
+              exit={slideVariant.exit}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+            >
+              <Card className="border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-end">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Target className="h-5 w-5 text-purple-500" />
+                      {t.skills}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const statNames: Array<
+                      | "strength"
+                      | "dexterity"
+                      | "constitution"
+                      | "intelligence"
+                      | "wisdom"
+                      | "charisma"
+                    > = [
+                      "strength",
+                      "dexterity",
+                      "constitution",
+                      "intelligence",
+                      "wisdom",
+                      "charisma",
+                    ];
+
+                    return (
+                      <div className="columns-2 gap-4">
+                        {statNames.map((statName) => {
+                          const skillsForStat = SKILLS.filter(
+                            (skill) => skill.stat === statName,
+                          );
+                          const stat = state.stats.find(
+                            (s) => s.name === statName,
+                          );
+                          const statModifier = stat
+                            ? calculateModifier(stat.points)
+                            : 0;
+
+                          const statDisplayName =
+                            statName === "strength"
+                              ? t.strength
+                              : statName === "dexterity"
+                                ? t.dexterity
+                                : statName === "constitution"
+                                  ? t.constitution
+                                  : statName === "intelligence"
+                                    ? t.intelligence
+                                    : statName === "wisdom"
+                                      ? t.wisdom
+                                      : statName === "charisma"
+                                        ? t.charisma
+                                        : statName;
+
+                          return (
+                            <div
+                              key={statName}
+                              className="p-1 rounded-lg bg-secondary/20 border border-border/50 space-y-1 break-inside-avoid mb-4"
+                            >
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-sm capitalize">
+                                  {statDisplayName}
+                                </h3>
+                                <Badge
+                                  variant="outline"
+                                  className={`${statModifier >= 0 ? "border-green-500/50 text-green-600 dark:text-green-400" : "border-red-500/50 text-red-600 dark:text-red-400"} text-xs`}
+                                >
+                                  {statModifier >= 0 ? "+" : ""}
+                                  {statModifier}
+                                </Badge>
+                              </div>
+                              <div className="space-y-0.5">
+                                {skillsForStat.map((skill) => {
+                                  const associatedStat = state.stats.find(
+                                    (s) => s.name === skill.stat,
+                                  );
+                                  const baseModifier = associatedStat
+                                    ? calculateModifier(associatedStat.points)
+                                    : 0;
+                                  const profBonus = calculateProficiencyBonus(
+                                    state.level,
+                                  );
+                                  const proficiency =
+                                    state.skillProficiencies[skill.name] ||
+                                    "none";
+
+                                  let totalModifier = baseModifier;
+                                  if (proficiency === "competence") {
+                                    totalModifier = baseModifier + profBonus;
+                                  } else if (proficiency === "expertise") {
+                                    totalModifier =
+                                      baseModifier + profBonus * 2;
+                                  }
+
+                                  const getProficiencyColor = () => {
+                                    switch (proficiency) {
+                                      case "expertise":
+                                        return "bg-orange-500/20 border-orange-500/50 text-orange-600 dark:text-orange-400 hover:bg-orange-500/30";
+                                      case "competence":
+                                        return "bg-yellow-500/20 border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/30";
+                                      default:
+                                        return "bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400 hover:bg-green-500/30";
+                                    }
+                                  };
+
+                                  const cycleProficiency = () => {
+                                    setState((prev) => ({
+                                      ...prev,
+                                      skillProficiencies: {
+                                        ...prev.skillProficiencies,
+                                        [skill.name]:
+                                          proficiency === "none"
+                                            ? "competence"
+                                            : proficiency === "competence"
+                                              ? "expertise"
+                                              : "none",
+                                      },
+                                    }));
+                                  };
+
+                                  return (
+                                    <div
+                                      key={skill.name}
+                                      className="px-0.5 py-0.5 rounded flex items-center hover:bg-secondary/40 transition-colors"
+                                    >
+                                      <Label className="text-xs font-medium capitalize cursor-pointer">
+                                        {(t as any)[skill.name] || skill.name}
+                                      </Label>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={cycleProficiency}
+                                        className={`${getProficiencyColor()} border ml-auto font-bold text-sm`}
+                                        title={`Proficiency: ${proficiency}`}
+                                      >
+                                        {totalModifier >= 0 ? "+" : ""}
+                                        {totalModifier}
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Combat Subsection */}
+          <TabsContent
+            value="combat"
+            key="combat-subsection"
+            className="mt-4 space-y-4"
+          >
+            <motion.div
+              key={`combat-${activeSubsection}`}
               initial={slideVariant.initial}
               animate={slideVariant.animate}
               exit={slideVariant.exit}
@@ -1743,9 +2302,13 @@ export function Tracker() {
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="magic" className="mt-4 space-y-4">
+          <TabsContent
+            value="magic"
+            className="mt-4 space-y-4"
+            key="magic-subsection"
+          >
             <motion.div
-              key={`magic-${activeTab}`}
+              key={`magic-${activeSubsection}`}
               initial={slideVariant.initial}
               animate={slideVariant.animate}
               exit={slideVariant.exit}
@@ -2406,9 +2969,13 @@ export function Tracker() {
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="abilities" className="mt-4 space-y-4">
+          <TabsContent
+            value="abilities"
+            className="mt-4 space-y-4"
+            key="abilities-subsection"
+          >
             <motion.div
-              key={`abilities-${activeTab}`}
+              key={`abilities-${activeSubsection}`}
               initial={slideVariant.initial}
               animate={slideVariant.animate}
               exit={slideVariant.exit}
@@ -2874,9 +3441,13 @@ export function Tracker() {
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="inventory" className="mt-4 space-y-4">
+          <TabsContent
+            value="inventory"
+            className="mt-4 space-y-4"
+            key="inventory-subsection"
+          >
             <motion.div
-              key={`inventory-${activeTab}`}
+              key={`inventory-${activeSubsection}`}
               initial={slideVariant.initial}
               animate={slideVariant.animate}
               exit={slideVariant.exit}
@@ -3293,6 +3864,163 @@ export function Tracker() {
           </div>
           <DialogFooter>
             <Button onClick={() => setSelectedBuff(null)}>{t.cancel}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isInitiativeInfoOpen}
+        onOpenChange={setIsInitiativeInfoOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.initiativeCalculation}</DialogTitle>
+            <DialogDescription>
+              {t.learnInitiativeCalculation}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <h4 className="font-semibold text-sm mb-2">{t.formula}</h4>
+              <p className="text-sm bg-secondary/30 p-3 rounded font-mono">
+                {t.initiativeFormula}
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-2">
+                {t.yourCalculation}
+              </h4>
+              <div className="bg-secondary/30 p-3 rounded space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{t.dexterityScore}</span>
+                  <span className="font-mono font-bold">
+                    {state.stats.find((s) => s.name === "dexterity")?.points ||
+                      10}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2">
+                  <span>{t.dexterityModifier}</span>
+                  <span className="font-mono font-bold">
+                    {calculateModifier(
+                      state.stats.find((s) => s.name === "dexterity")?.points ||
+                        10,
+                    ) >= 0
+                      ? "+"
+                      : ""}
+                    {calculateModifier(
+                      state.stats.find((s) => s.name === "dexterity")?.points ||
+                        10,
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-2">{t.yourInitiative}</h4>
+              <p className="text-sm bg-blue-500/10 border border-blue-500 p-3 rounded font-mono font-bold">
+                {calculateModifier(
+                  state.stats.find((s) => s.name === "dexterity")?.points || 10,
+                ) >= 0
+                  ? "+"
+                  : ""}
+                {calculateModifier(
+                  state.stats.find((s) => s.name === "dexterity")?.points || 10,
+                )}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t.initiativeDescription}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsInitiativeInfoOpen(false)}>
+              {t.close}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isPassivePerceptionInfoOpen}
+        onOpenChange={setIsPassivePerceptionInfoOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{t.passivePerceptionCalculation}</DialogTitle>
+            <DialogDescription>
+              {t.learnPassivePerceptionCalculation}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <h4 className="font-semibold text-sm mb-2">{t.formula}</h4>
+              <p className="text-sm bg-secondary/30 p-3 rounded font-mono">
+                {t.passivePerceptionFormula}
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-2">
+                {t.yourCalculation}
+              </h4>
+              <div className="bg-secondary/30 p-3 rounded space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{t.baseDC}</span>
+                  <span className="font-mono font-bold">10</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>{t.characterLevel}</span>
+                  <span className="font-mono font-bold">{state.level}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>{t.proficiencyBonus}</span>
+                  <span className="font-mono font-bold">
+                    {calculateProficiencyBonus(state.level) >= 0 ? "+" : ""}
+                    {calculateProficiencyBonus(state.level)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>{t.wisdomScore}</span>
+                  <span className="font-mono font-bold">
+                    {state.stats.find((s) => s.name === "wisdom")?.points || 10}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2">
+                  <span>{t.wisdomModifier}</span>
+                  <span className="font-mono font-bold">
+                    {calculateModifier(
+                      state.stats.find((s) => s.name === "wisdom")?.points ||
+                        10,
+                    ) >= 0
+                      ? "+"
+                      : ""}
+                    {calculateModifier(
+                      state.stats.find((s) => s.name === "wisdom")?.points ||
+                        10,
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm mb-2">
+                {t.yourPassivePerception}
+              </h4>
+              <p className="text-sm bg-blue-500/10 border border-blue-500 p-3 rounded font-mono font-bold">
+                {10 +
+                  calculateProficiencyBonus(state.level) +
+                  calculateModifier(
+                    state.stats.find((s) => s.name === "wisdom")?.points || 10,
+                  )}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t.passivePerceptionDescription}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsPassivePerceptionInfoOpen(false)}>
+              {t.close}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
