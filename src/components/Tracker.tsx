@@ -82,11 +82,25 @@ import {
   PreparedSpell,
   Spell,
   Stat,
+  SkillName,
+  SkillProficiency,
 } from "../types";
 import { translations, Language } from "../translations";
 import { calculateModifier } from "../consts/statModifiers";
 import { calculateProficiencyBonus } from "../consts/proficiencyBonus";
 import { SKILLS } from "../consts/skills";
+
+// Helper function to create initial skill proficiencies
+const createInitialSkillProficiencies = (): Record<
+  SkillName,
+  SkillProficiency
+> => {
+  const proficiencies: Record<string, SkillProficiency> = {};
+  SKILLS.forEach((skill) => {
+    proficiencies[skill.name] = "none";
+  });
+  return proficiencies as Record<SkillName, SkillProficiency>;
+};
 
 const INITIAL_STATE: CharacterState = {
   id: "default",
@@ -112,6 +126,7 @@ const INITIAL_STATE: CharacterState = {
   buffs: [],
   preparedSpells: [],
   inventory: [],
+  skillProficiencies: createInitialSkillProficiencies(),
 };
 
 export function Tracker() {
@@ -149,6 +164,11 @@ export function Tracker() {
                     id: hd.id || `hd-${i}`,
                   }))
                 : INITIAL_STATE.hitDice,
+              // Merge skill proficiencies with defaults
+              skillProficiencies: {
+                ...createInitialSkillProficiencies(),
+                ...(char.skillProficiencies || {}),
+              },
             }));
         }
       } catch (e) {
@@ -178,6 +198,11 @@ export function Tracker() {
                 id: hd.id || `hd-${i}`,
               }))
             : INITIAL_STATE.hitDice,
+          // Merge skill proficiencies with defaults
+          skillProficiencies: {
+            ...createInitialSkillProficiencies(),
+            ...(parsed.skillProficiencies || {}),
+          },
         };
         return [char];
       } catch (e) {
@@ -1579,9 +1604,49 @@ export function Tracker() {
                                   const associatedStat = state.stats.find(
                                     (s) => s.name === skill.stat,
                                   );
-                                  const modifier = associatedStat
+                                  const baseModifier = associatedStat
                                     ? calculateModifier(associatedStat.points)
                                     : 0;
+                                  const profBonus = calculateProficiencyBonus(
+                                    state.level,
+                                  );
+                                  const proficiency =
+                                    state.skillProficiencies[skill.name] ||
+                                    "none";
+
+                                  let totalModifier = baseModifier;
+                                  if (proficiency === "competence") {
+                                    totalModifier = baseModifier + profBonus;
+                                  } else if (proficiency === "expertise") {
+                                    totalModifier =
+                                      baseModifier + profBonus * 2;
+                                  }
+
+                                  const getProficiencyColor = () => {
+                                    switch (proficiency) {
+                                      case "expertise":
+                                        return "bg-orange-500/20 border-orange-500/50 text-orange-600 dark:text-orange-400 hover:bg-orange-500/30";
+                                      case "competence":
+                                        return "bg-yellow-500/20 border-yellow-500/50 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/30";
+                                      default:
+                                        return "bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400 hover:bg-green-500/30";
+                                    }
+                                  };
+
+                                  const cycleProficiency = () => {
+                                    setState((prev) => ({
+                                      ...prev,
+                                      skillProficiencies: {
+                                        ...prev.skillProficiencies,
+                                        [skill.name]:
+                                          proficiency === "none"
+                                            ? "competence"
+                                            : proficiency === "competence"
+                                              ? "expertise"
+                                              : "none",
+                                      },
+                                    }));
+                                  };
 
                                   return (
                                     <div
@@ -1591,13 +1656,16 @@ export function Tracker() {
                                       <Label className="text-xs font-medium capitalize cursor-pointer">
                                         {(t as any)[skill.name] || skill.name}
                                       </Label>
-                                      <Badge
+                                      <Button
                                         variant="outline"
-                                        className={`${modifier >= 0 ? "border-green-500/50 text-green-600 dark:text-green-400" : "border-red-500/50 text-red-600 dark:text-red-400"} ml-auto`}
+                                        size="sm"
+                                        onClick={cycleProficiency}
+                                        className={`${getProficiencyColor()} border ml-auto font-bold text-sm`}
+                                        title={`Proficiency: ${proficiency}`}
                                       >
-                                        {modifier >= 0 ? "+" : ""}
-                                        {modifier}
-                                      </Badge>
+                                        {totalModifier >= 0 ? "+" : ""}
+                                        {totalModifier}
+                                      </Button>
                                     </div>
                                   );
                                 })}

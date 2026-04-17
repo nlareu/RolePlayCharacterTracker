@@ -67,6 +67,28 @@ export type Stat = {
   points: number;
 };
 
+export type SkillProficiency = "none" | "competence" | "expertise";
+
+export type SkillName =
+  | "acrobatics"
+  | "animalHandling"
+  | "arcana"
+  | "athletics"
+  | "deception"
+  | "history"
+  | "insight"
+  | "intimidation"
+  | "investigation"
+  | "medicine"
+  | "nature"
+  | "perception"
+  | "performance"
+  | "persuasion"
+  | "religion"
+  | "sleightOfHand"
+  | "stealth"
+  | "survival";
+
 export type CharacterState = {
   id: string;
   name: string;
@@ -84,4 +106,5 @@ export type CharacterState = {
   buffs: Buff[];
   preparedSpells: PreparedSpell[];
   inventory: InventoryItem[];
+  skillProficiencies: Record<SkillName, SkillProficiency>;
 };
