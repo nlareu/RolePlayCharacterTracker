@@ -1304,12 +1304,19 @@ export function Tracker() {
                           max="20"
                           value={state.level}
                           onChange={(e) => {
-                            const value = parseInt(e.target.value);
-                            if (!isNaN(value) && value >= 1 && value <= 20) {
+                            const inputValue = e.target.value;
+                            if (inputValue === "") {
                               setState((prev) => ({
                                 ...prev,
-                                level: value,
+                                level: "",
                               }));
+                            } else {
+                              const value = parseInt(inputValue);
+                              if (!isNaN(value))
+                                setState((prev) => ({
+                                  ...prev,
+                                  level: value,
+                                }));
                             }
                           }}
                           className="h-8 text-center font-mono flex-1"
@@ -1439,11 +1446,11 @@ export function Tracker() {
                               {calculateModifier(stat.points)}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-6 w-6"
                               onClick={() => {
                                 const newPoints = Math.max(1, stat.points - 1);
                                 setState((prev) => ({
@@ -1456,7 +1463,7 @@ export function Tracker() {
                                 }));
                               }}
                             >
-                              <Minus className="h-4 w-4" />
+                              <Minus className="h-3 w-3" />
                             </Button>
                             <Input
                               type="number"
@@ -1464,28 +1471,35 @@ export function Tracker() {
                               max="30"
                               value={stat.points}
                               onChange={(e) => {
-                                const value = parseInt(e.target.value);
-                                if (
-                                  !isNaN(value) &&
-                                  value >= 1 &&
-                                  value <= 30
-                                ) {
+                                const inputValue = e.target.value;
+                                if (inputValue === "") {
                                   setState((prev) => ({
                                     ...prev,
                                     stats: prev.stats.map((s) =>
                                       s.name === stat.name
-                                        ? { ...s, points: value }
+                                        ? { ...s, points: "" }
                                         : s,
                                     ),
                                   }));
+                                } else {
+                                  const value = parseInt(inputValue);
+                                  if (!isNaN(value))
+                                    setState((prev) => ({
+                                      ...prev,
+                                      stats: prev.stats.map((s) =>
+                                        s.name === stat.name
+                                          ? { ...s, points: value }
+                                          : s,
+                                      ),
+                                    }));
                                 }
                               }}
-                              className="h-8 text-center font-mono flex-1"
+                              className="h-7 text-center font-mono min-w-14 text-sm"
                             />
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-6 w-6"
                               onClick={() => {
                                 const newPoints = Math.min(30, stat.points + 1);
                                 setState((prev) => ({
@@ -1498,7 +1512,7 @@ export function Tracker() {
                                 }));
                               }}
                             >
-                              <Plus className="h-4 w-4" />
+                              <Plus className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
