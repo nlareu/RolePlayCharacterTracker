@@ -25,6 +25,7 @@ import {
   Pencil,
   Download,
   Upload,
+  Target,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -85,6 +86,7 @@ import {
 import { translations, Language } from "../translations";
 import { calculateModifier } from "../consts/statModifiers";
 import { calculateProficiencyBonus } from "../consts/proficiencyBonus";
+import { SKILLS } from "../consts/skills";
 
 const INITIAL_STATE: CharacterState = {
   id: "default",
@@ -204,7 +206,7 @@ export function Tracker() {
 
   // Define section structure
   const sections: Record<SectionType, Subsection[]> = {
-    stats: ["stats"],
+    stats: ["stats", "skills"],
     game: ["combat", "magic", "abilities", "inventory"],
   };
 
@@ -1172,7 +1174,7 @@ export function Tracker() {
         className="w-full"
       >
         <TabsList
-          className={`grid w-full ${activeSection === "stats" ? "grid-cols-1" : "grid-cols-4"} h-12`}
+          className={`grid w-full ${activeSection === "stats" ? "grid-cols-2" : "grid-cols-4"} h-12`}
         >
           {sections[activeSection].map((subsection) => {
             const getIcon = (name: string) => {
@@ -1187,6 +1189,8 @@ export function Tracker() {
                   return <Package className="h-4 w-4" />;
                 case "stats":
                   return <Hash className="h-4 w-4" />;
+                case "skills":
+                  return <Target className="h-4 w-4" />;
                 default:
                   return null;
               }
@@ -1204,6 +1208,8 @@ export function Tracker() {
                   return t.inventory;
                 case "stats":
                   return t.mainStats;
+                case "skills":
+                  return t.skills;
                 default:
                   return name;
               }
@@ -1478,6 +1484,130 @@ export function Tracker() {
                       No stats data
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Skills Subsection */}
+          <TabsContent
+            value="skills"
+            key="skills-subsection"
+            className="mt-4 space-y-4"
+          >
+            <motion.div
+              key={`skills-${activeSubsection}`}
+              initial={slideVariant.initial}
+              animate={slideVariant.animate}
+              exit={slideVariant.exit}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+            >
+              <Card className="border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-end">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Target className="h-5 w-5 text-purple-500" />
+                      {t.skills}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const statNames: Array<
+                      | "strength"
+                      | "dexterity"
+                      | "constitution"
+                      | "intelligence"
+                      | "wisdom"
+                      | "charisma"
+                    > = [
+                      "strength",
+                      "dexterity",
+                      "constitution",
+                      "intelligence",
+                      "wisdom",
+                      "charisma",
+                    ];
+
+                    return (
+                      <div className="columns-2 gap-4">
+                        {statNames.map((statName) => {
+                          const skillsForStat = SKILLS.filter(
+                            (skill) => skill.stat === statName,
+                          );
+                          const stat = state.stats.find(
+                            (s) => s.name === statName,
+                          );
+                          const statModifier = stat
+                            ? calculateModifier(stat.points)
+                            : 0;
+
+                          const statDisplayName =
+                            statName === "strength"
+                              ? t.strength
+                              : statName === "dexterity"
+                                ? t.dexterity
+                                : statName === "constitution"
+                                  ? t.constitution
+                                  : statName === "intelligence"
+                                    ? t.intelligence
+                                    : statName === "wisdom"
+                                      ? t.wisdom
+                                      : statName === "charisma"
+                                        ? t.charisma
+                                        : statName;
+
+                          return (
+                            <div
+                              key={statName}
+                              className="p-1 rounded-lg bg-secondary/20 border border-border/50 space-y-1 break-inside-avoid mb-4"
+                            >
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-sm capitalize">
+                                  {statDisplayName}
+                                </h3>
+                                <Badge
+                                  variant="outline"
+                                  className={`${statModifier >= 0 ? "border-green-500/50 text-green-600 dark:text-green-400" : "border-red-500/50 text-red-600 dark:text-red-400"} text-xs`}
+                                >
+                                  {statModifier >= 0 ? "+" : ""}
+                                  {statModifier}
+                                </Badge>
+                              </div>
+                              <div className="space-y-0.5">
+                                {skillsForStat.map((skill) => {
+                                  const associatedStat = state.stats.find(
+                                    (s) => s.name === skill.stat,
+                                  );
+                                  const modifier = associatedStat
+                                    ? calculateModifier(associatedStat.points)
+                                    : 0;
+
+                                  return (
+                                    <div
+                                      key={skill.name}
+                                      className="px-0.5 py-0.5 rounded flex items-center hover:bg-secondary/40 transition-colors"
+                                    >
+                                      <Label className="text-xs font-medium capitalize cursor-pointer">
+                                        {(t as any)[skill.name] || skill.name}
+                                      </Label>
+                                      <Badge
+                                        variant="outline"
+                                        className={`${modifier >= 0 ? "border-green-500/50 text-green-600 dark:text-green-400" : "border-red-500/50 text-red-600 dark:text-red-400"} ml-auto`}
+                                      >
+                                        {modifier >= 0 ? "+" : ""}
+                                        {modifier}
+                                      </Badge>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             </motion.div>
