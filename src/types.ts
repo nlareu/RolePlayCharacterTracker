@@ -20,11 +20,14 @@ export type Ability = {
   resetOn: "short" | "long";
 };
 
-export type HitDice = {
-  id: string;
+export type HitDie = {
   dieType: string;
-  total: number;
-  used: number;
+  used: boolean;
+};
+
+export type HitDices = {
+  id: string;
+  dice: HitDie[];
 };
 
 export type Buff = {
@@ -101,7 +104,7 @@ export type CharacterState = {
   deathSaves: DeathSaves;
   stats: Stat[];
   spellSlots: SpellSlot[];
-  hitDice: HitDice[];
+  hitDice: HitDices[];
   abilities: Ability[];
   buffs: Buff[];
   preparedSpells: PreparedSpell[];

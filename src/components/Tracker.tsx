@@ -76,7 +76,7 @@ import {
   CharacterState,
   SpellSlot,
   Ability,
-  HitDice,
+  HitDices,
   Buff,
   InventoryItem,
   PreparedSpell,
@@ -102,6 +102,27 @@ const createInitialSkillProficiencies = (): Record<
   return proficiencies as Record<SkillName, SkillProficiency>;
 };
 
+// Helper function to migrate old hit dice format to new format
+const migrateHitDice = (hd: any): HitDices => {
+  // Check if it's already in new format (has 'dice' array)
+  if (hd.dice && Array.isArray(hd.dice)) {
+    return hd;
+  }
+  // Migrate from old format (total, used, dieType)
+  const dieType = hd.dieType || "d8";
+  const total = hd.total || 1;
+  const used = hd.used || 0;
+  const id = hd.id || `hd-${Date.now()}`;
+
+  return {
+    id,
+    dice: Array.from({ length: total }).map((_, i) => ({
+      dieType,
+      used: i < used,
+    })),
+  };
+};
+
 const INITIAL_STATE: CharacterState = {
   id: "default",
   name: "Aventurero",
@@ -121,7 +142,18 @@ const INITIAL_STATE: CharacterState = {
     { level: 2, total: 3, used: 0, spells: [] },
     { level: 3, total: 2, used: 0, spells: [] },
   ],
-  hitDice: [{ id: "default-hd", dieType: "d8", total: 5, used: 0 }],
+  hitDice: [
+    {
+      id: "default-hd",
+      dice: [
+        { dieType: "d8", used: false },
+        { dieType: "d8", used: false },
+        { dieType: "d8", used: false },
+        { dieType: "d8", used: false },
+        { dieType: "d8", used: false },
+      ],
+    },
+  ],
   abilities: [],
   buffs: [],
   preparedSpells: [],
@@ -157,12 +189,9 @@ export function Tracker() {
                       self.findIndex((t) => t.level === s.level) === i,
                   )
                 : INITIAL_STATE.spellSlots,
-              // Ensure hit dice have IDs
+              // Migrate hit dice to new format
               hitDice: char.hitDice
-                ? char.hitDice.map((hd, i) => ({
-                    ...hd,
-                    id: hd.id || `hd-${i}`,
-                  }))
+                ? char.hitDice.map((hd: any) => migrateHitDice(hd))
                 : INITIAL_STATE.hitDice,
               // Merge skill proficiencies with defaults
               skillProficiencies: {
@@ -193,10 +222,7 @@ export function Tracker() {
               )
             : INITIAL_STATE.spellSlots,
           hitDice: parsed.hitDice
-            ? parsed.hitDice.map((hd: any, i: number) => ({
-                ...hd,
-                id: hd.id || `hd-${i}`,
-              }))
+            ? parsed.hitDice.map((hd: any) => migrateHitDice(hd))
             : INITIAL_STATE.hitDice,
           // Merge skill proficiencies with defaults
           skillProficiencies: {
@@ -283,6 +309,12 @@ export function Tracker() {
   const [newSpellDescription, setNewSpellDescription] = useState("");
   const [isEditingSpellSlots, setIsEditingSpellSlots] = useState(false);
   const [isEditingHitDice, setIsEditingHitDice] = useState(false);
+  const [editDiceDialogOpen, setEditDiceDialogOpen] = useState(false);
+  const [editDiceState, setEditDiceState] = useState<{
+    hdId: string;
+    dieIndex: number;
+    newDieType: string;
+  } | null>(null);
   const [isEditingAbilities, setIsEditingAbilities] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [newInventoryTitle, setNewInventoryTitle] = useState("");
@@ -857,10 +889,18 @@ export function Tracker() {
       spellSlots: prev.spellSlots.map((s) => ({ ...s, used: 0 })),
       abilities: prev.abilities.map((a) => ({ ...a, used: 0 })),
       buffs: prev.buffs.map((b) => ({ ...b, used: 0 })),
-      hitDice: prev.hitDice.map((hd) => ({
-        ...hd,
-        used: Math.max(0, hd.used - Math.floor(hd.total / 2)),
-      })),
+      hitDice: prev.hitDice.map((hd) => {
+        const usedCount = hd.dice.filter((d) => d.used).length;
+        const recoveredCount = Math.floor(hd.dice.length / 2);
+        const newUsedCount = Math.max(0, usedCount - recoveredCount);
+        return {
+          ...hd,
+          dice: hd.dice.map((d, i) => ({
+            ...d,
+            used: i < newUsedCount,
+          })),
+        };
+      }),
       preparedSpells: prev.preparedSpells.map((s) => ({ ...s, used: false })),
     }));
   };
@@ -3023,97 +3063,189 @@ export function Tracker() {
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4 text-blue-500" />
-                          {isEditingHitDice ? (
-                            <div className="flex items-center gap-2 bg-secondary/30 rounded-md px-1 py-0.5 border border-border/50">
-                              <button
-                                onClick={() =>
-                                  setState((prev) => ({
-                                    ...prev,
-                                    hitDice: prev.hitDice.map((h) =>
-                                      h.id === hd.id
-                                        ? {
-                                            ...h,
-                                            total: Math.max(0, h.total - 1),
-                                            used: Math.min(
-                                              h.used,
-                                              Math.max(0, h.total - 1),
-                                            ),
-                                          }
-                                        : h,
-                                    ),
-                                  }))
-                                }
-                                className="p-1 hover:text-primary transition-colors"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="text-xs font-mono font-bold w-4 text-center">
-                                {hd.total}
-                              </span>
-                              <button
-                                onClick={() =>
-                                  setState((prev) => ({
-                                    ...prev,
-                                    hitDice: prev.hitDice.map((h) =>
-                                      h.id === hd.id
-                                        ? { ...h, total: h.total + 1 }
-                                        : h,
-                                    ),
-                                  }))
-                                }
-                                className="p-1 hover:text-primary transition-colors"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-sm font-medium">
-                              {t.hitDice}
-                            </span>
-                          )}
+                          <span className="text-sm font-medium">
+                            {t.hitDice}
+                          </span>
                         </div>
                         <span className="text-sm font-mono text-muted-foreground">
-                          {isEditingHitDice
-                            ? hd.dieType
-                            : `${hd.total - hd.used} / ${hd.total} ${t.remaining}`}
+                          {hd.dice.filter((d) => !d.used).length} /{" "}
+                          {hd.dice.length} {t.remaining}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {Array.from({ length: hd.total }).map((_, i) => (
+                        {hd.dice.map((die, i) => (
                           <button
                             key={i}
+                            onClick={() => {
+                              if (isEditingHitDice) {
+                                setEditDiceState({
+                                  hdId: hd.id,
+                                  dieIndex: i,
+                                  newDieType: die.dieType,
+                                });
+                                setEditDiceDialogOpen(true);
+                              } else {
+                                setState((prev) => ({
+                                  ...prev,
+                                  hitDice: prev.hitDice.map((h) =>
+                                    h.id === hd.id
+                                      ? {
+                                          ...h,
+                                          dice: h.dice.map((d, idx) =>
+                                            idx === i
+                                              ? { ...d, used: !d.used }
+                                              : d,
+                                          ),
+                                        }
+                                      : h,
+                                  ),
+                                }));
+                              }
+                            }}
+                            className={`
+                              h-10 w-10 rounded-full border-2 transition-all duration-200 flex items-center justify-center text-xs font-bold
+                              ${
+                                die.used
+                                  ? "bg-muted border-muted-foreground/30 text-muted-foreground"
+                                  : "bg-blue-500/10 border-blue-500 text-blue-500"
+                              }
+                              ${isEditingHitDice ? "cursor-pointer hover:scale-110" : "hover:scale-105 active:scale-95"}
+                            `}
+                          >
+                            <span className="font-semibold">
+                              {die.dieType.replace(/d/i, "")}
+                            </span>
+                          </button>
+                        ))}
+                        {isEditingHitDice && (
+                          <button
                             onClick={() =>
-                              !isEditingHitDice &&
                               setState((prev) => ({
                                 ...prev,
                                 hitDice: prev.hitDice.map((h) =>
                                   h.id === hd.id
-                                    ? { ...h, used: i < h.used ? i : i + 1 }
+                                    ? {
+                                        ...h,
+                                        dice: [
+                                          ...h.dice,
+                                          { dieType: "d8", used: false },
+                                        ],
+                                      }
                                     : h,
                                 ),
                               }))
                             }
-                            disabled={isEditingHitDice}
-                            className={`
-                              h-10 w-10 rounded-full border-2 transition-all duration-200 flex items-center justify-center
-                              ${
-                                i < hd.used
-                                  ? "bg-muted border-muted-foreground/30 text-muted-foreground"
-                                  : "bg-blue-500/10 border-blue-500 text-blue-500"
-                              }
-                              ${isEditingHitDice ? "opacity-50 cursor-default" : "hover:scale-105 active:scale-95"}
-                            `}
+                            className="h-10 w-10 rounded-full border-2 border-dashed border-blue-500/50 hover:border-blue-500 transition-colors flex items-center justify-center text-blue-500 hover:bg-blue-500/5"
+                            title="Add new hit die"
                           >
-                            <Shield
-                              className={`h-4 w-4 ${i < hd.used ? "" : "fill-blue-500"}`}
-                            />
+                            <Plus className="h-4 w-4" />
                           </button>
-                        ))}
+                        )}
                       </div>
+                      {isEditingHitDice && hd.dice.length > 0 && (
+                        <button
+                          onClick={() =>
+                            setState((prev) => ({
+                              ...prev,
+                              hitDice: prev.hitDice.map((h) =>
+                                h.id === hd.id
+                                  ? {
+                                      ...h,
+                                      dice: h.dice.slice(0, -1),
+                                    }
+                                  : h,
+                              ),
+                            }))
+                          }
+                          className="text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1"
+                        >
+                          <Minus className="h-3 w-3" />
+                          Remove Last
+                        </button>
+                      )}
                     </div>
                   ))}
                 </CardContent>
               </Card>
+
+              <Dialog
+                open={editDiceDialogOpen}
+                onOpenChange={setEditDiceDialogOpen}
+              >
+                <DialogContent className="sm:max-w-[300px]">
+                  <DialogHeader>
+                    <DialogTitle>Edit Hit Die</DialogTitle>
+                    <DialogDescription>
+                      Select a new dice type for this hit die.
+                    </DialogDescription>
+                  </DialogHeader>
+                  {editDiceState && (
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-3">
+                        <Label className="text-sm font-medium">Dice Type</Label>
+                        <div className="flex gap-2 flex-wrap">
+                          {["d6", "d8", "d10", "d12"].map((diceType) => (
+                            <button
+                              key={diceType}
+                              onClick={() =>
+                                setEditDiceState({
+                                  ...editDiceState,
+                                  newDieType: diceType,
+                                })
+                              }
+                              className={`
+                                px-4 py-2 rounded border-2 font-semibold transition-all
+                                ${
+                                  editDiceState.newDieType === diceType
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border bg-background text-foreground hover:border-primary/50"
+                                }
+                              `}
+                            >
+                              {diceType}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditDiceDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (editDiceState) {
+                          setState((prev) => ({
+                            ...prev,
+                            hitDice: prev.hitDice.map((h) =>
+                              h.id === editDiceState.hdId
+                                ? {
+                                    ...h,
+                                    dice: h.dice.map((d, idx) =>
+                                      idx === editDiceState.dieIndex
+                                        ? {
+                                            ...d,
+                                            dieType: editDiceState.newDieType,
+                                          }
+                                        : d,
+                                    ),
+                                  }
+                                : h,
+                            ),
+                          }));
+                        }
+                        setEditDiceDialogOpen(false);
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
