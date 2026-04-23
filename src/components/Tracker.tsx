@@ -1387,19 +1387,12 @@ export function Tracker() {
                           value={state.level}
                           onChange={(e) => {
                             const inputValue = e.target.value;
-                            if (inputValue === "") {
+                            const value = parseInt(inputValue);
+                            if (!isNaN(value))
                               setState((prev) => ({
                                 ...prev,
-                                level: "",
+                                level: value,
                               }));
-                            } else {
-                              const value = parseInt(inputValue);
-                              if (!isNaN(value))
-                                setState((prev) => ({
-                                  ...prev,
-                                  level: value,
-                                }));
-                            }
                           }}
                           className="h-8 text-center font-mono flex-1"
                         />
@@ -1554,27 +1547,16 @@ export function Tracker() {
                               value={stat.points}
                               onChange={(e) => {
                                 const inputValue = e.target.value;
-                                if (inputValue === "") {
+                                const value = parseInt(inputValue);
+                                if (!isNaN(value))
                                   setState((prev) => ({
                                     ...prev,
                                     stats: prev.stats.map((s) =>
                                       s.name === stat.name
-                                        ? { ...s, points: "" }
+                                        ? { ...s, points: value }
                                         : s,
                                     ),
                                   }));
-                                } else {
-                                  const value = parseInt(inputValue);
-                                  if (!isNaN(value))
-                                    setState((prev) => ({
-                                      ...prev,
-                                      stats: prev.stats.map((s) =>
-                                        s.name === stat.name
-                                          ? { ...s, points: value }
-                                          : s,
-                                      ),
-                                    }));
-                                }
                               }}
                               className="h-7 text-center font-mono min-w-14 text-sm"
                             />
@@ -1834,19 +1816,12 @@ export function Tracker() {
                         value={state.hp.max}
                         onChange={(e) => {
                           const inputValue = e.target.value;
-                          if (inputValue === "") {
+                          const val = parseInt(inputValue);
+                          if (!isNaN(val))
                             setState((prev) => ({
                               ...prev,
-                              hp: { ...prev.hp, max: "" },
+                              hp: { ...prev.hp, max: val },
                             }));
-                          } else {
-                            const val = parseInt(inputValue);
-                            if (!isNaN(val))
-                              setState((prev) => ({
-                                ...prev,
-                                hp: { ...prev.hp, max: val },
-                              }));
-                          }
                         }}
                         className="h-8 w-24 text-center font-mono"
                       />
@@ -2139,12 +2114,8 @@ export function Tracker() {
                                   value={newBuffTotal}
                                   onChange={(e) => {
                                     const inputValue = e.target.value;
-                                    if (inputValue === "") {
-                                      setNewBuffTotal("");
-                                    } else {
-                                      const val = parseInt(inputValue);
-                                      if (!isNaN(val)) setNewBuffTotal(val);
-                                    }
+                                    const val = parseInt(inputValue);
+                                    if (!isNaN(val)) setNewBuffTotal(val);
                                   }}
                                 />
                               </div>
@@ -2680,12 +2651,8 @@ export function Tracker() {
                         value={newSpellLevel}
                         onChange={(e) => {
                           const inputValue = e.target.value;
-                          if (inputValue === "") {
-                            setNewSpellLevel("");
-                          } else {
-                            const val = parseInt(inputValue);
-                            if (!isNaN(val)) setNewSpellLevel(val);
-                          }
+                          const val = parseInt(inputValue);
+                          if (!isNaN(val)) setNewSpellLevel(val);
                         }}
                         className="h-8 w-16 text-xs font-mono"
                         min="1"
@@ -3365,12 +3332,8 @@ export function Tracker() {
                               value={newAbilityTotal}
                               onChange={(e) => {
                                 const inputValue = e.target.value;
-                                if (inputValue === "") {
-                                  setNewAbilityTotal("");
-                                } else {
-                                  const val = parseInt(inputValue);
-                                  if (!isNaN(val)) setNewAbilityTotal(val);
-                                }
+                                const val = parseInt(inputValue);
+                                if (!isNaN(val)) setNewAbilityTotal(val);
                               }}
                             />
                           </div>
@@ -3724,12 +3687,8 @@ export function Tracker() {
                                 value={newInventoryCount}
                                 onChange={(e) => {
                                   const inputValue = e.target.value;
-                                  if (inputValue === "") {
-                                    setNewInventoryCount("");
-                                  } else {
-                                    const val = parseInt(inputValue);
-                                    if (!isNaN(val)) setNewInventoryCount(val);
-                                  }
+                                  const val = parseInt(inputValue);
+                                  if (!isNaN(val)) setNewInventoryCount(val);
                                 }}
                               />
                             </div>
