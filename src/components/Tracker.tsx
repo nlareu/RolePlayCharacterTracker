@@ -261,8 +261,36 @@ export function Tracker() {
     game: ["combat", "magic", "abilities", "inventory"],
   };
 
-  const [activeSection, setActiveSection] = useState<SectionType>("game");
-  const [activeSubsection, setActiveSubsection] = useState<string>("combat");
+  const getInitialNavigation = (): {
+    section: SectionType;
+    subsection: Subsection;
+  } => {
+    const savedSection = localStorage.getItem(
+      "dnd_tracker_active_section",
+    ) as SectionType | null;
+    const section =
+      savedSection && Object.keys(sections).includes(savedSection)
+        ? savedSection
+        : "game";
+
+    const savedSubsection = localStorage.getItem(
+      "dnd_tracker_active_subsection",
+    );
+    const subsection =
+      savedSubsection && sections[section].includes(savedSubsection)
+        ? savedSubsection
+        : sections[section][0];
+
+    return { section, subsection };
+  };
+
+  const initialNavigation = getInitialNavigation();
+  const [activeSection, setActiveSection] = useState<SectionType>(
+    initialNavigation.section,
+  );
+  const [activeSubsection, setActiveSubsection] = useState<string>(
+    initialNavigation.subsection,
+  );
   const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(
     null,
   );
@@ -537,6 +565,20 @@ export function Tracker() {
   useEffect(() => {
     localStorage.setItem("dnd_tracker_active_id", activeCharacterId);
   }, [activeCharacterId]);
+
+  useEffect(() => {
+    if (!sections[activeSection].includes(activeSubsection)) {
+      setActiveSubsection(sections[activeSection][0]);
+    }
+  }, [activeSection, activeSubsection]);
+
+  useEffect(() => {
+    localStorage.setItem("dnd_tracker_active_section", activeSection);
+  }, [activeSection]);
+
+  useEffect(() => {
+    localStorage.setItem("dnd_tracker_active_subsection", activeSubsection);
+  }, [activeSubsection]);
 
   const createNewCharacter = () => {
     const newChar = {
