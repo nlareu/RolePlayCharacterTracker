@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Shield,
   Zap,
@@ -250,6 +250,10 @@ export function Tracker() {
     }
     return characters[0]?.id || "default";
   });
+
+  // Refs for HP and Temp HP inputs
+  const hpInputRef = useRef<HTMLInputElement>(null);
+  const tempHpInputRef = useRef<HTMLInputElement>(null);
 
   // Section types
   type SectionType = "stats" | "game";
@@ -1387,12 +1391,19 @@ export function Tracker() {
                           value={state.level}
                           onChange={(e) => {
                             const inputValue = e.target.value;
-                            const value = parseInt(inputValue);
-                            if (!isNaN(value))
+                            if (inputValue === "") {
                               setState((prev) => ({
                                 ...prev,
-                                level: value,
+                                level: "",
                               }));
+                            } else {
+                              const value = parseInt(inputValue);
+                              if (!isNaN(value))
+                                setState((prev) => ({
+                                  ...prev,
+                                  level: value,
+                                }));
+                            }
                           }}
                           className="h-8 text-center font-mono flex-1"
                         />
@@ -1547,16 +1558,27 @@ export function Tracker() {
                               value={stat.points}
                               onChange={(e) => {
                                 const inputValue = e.target.value;
-                                const value = parseInt(inputValue);
-                                if (!isNaN(value))
+                                if (inputValue === "") {
                                   setState((prev) => ({
                                     ...prev,
                                     stats: prev.stats.map((s) =>
                                       s.name === stat.name
-                                        ? { ...s, points: value }
+                                        ? { ...s, points: "" }
                                         : s,
                                     ),
                                   }));
+                                } else {
+                                  const value = parseInt(inputValue);
+                                  if (!isNaN(value))
+                                    setState((prev) => ({
+                                      ...prev,
+                                      stats: prev.stats.map((s) =>
+                                        s.name === stat.name
+                                          ? { ...s, points: value }
+                                          : s,
+                                      ),
+                                    }));
+                                }
                               }}
                               className="h-7 text-center font-mono min-w-14 text-sm"
                             />
@@ -1816,12 +1838,19 @@ export function Tracker() {
                         value={state.hp.max}
                         onChange={(e) => {
                           const inputValue = e.target.value;
-                          const val = parseInt(inputValue);
-                          if (!isNaN(val))
+                          if (inputValue === "") {
                             setState((prev) => ({
                               ...prev,
-                              hp: { ...prev.hp, max: val },
+                              hp: { ...prev.hp, max: "" },
                             }));
+                          } else {
+                            const val = parseInt(inputValue);
+                            if (!isNaN(val))
+                              setState((prev) => ({
+                                ...prev,
+                                hp: { ...prev.hp, max: val },
+                              }));
+                          }
                         }}
                         className="h-8 w-24 text-center font-mono"
                       />
@@ -1888,22 +1917,34 @@ export function Tracker() {
                           variant="destructive"
                           size="icon"
                           className="h-10 w-10 shrink-0"
-                          onClick={() => updateHP(-1)}
+                          onClick={() => {
+                            if (hpInputRef.current) {
+                              const val = parseInt(
+                                hpInputRef.current.value || "1",
+                              );
+                              if (!isNaN(val)) updateHP(-val);
+                            }
+                          }}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
                         <Input
+                          ref={hpInputRef}
                           type="number"
                           className="h-10 text-center font-mono text-sm px-1"
                           placeholder={t.amount}
-                          value="1"
+                          defaultValue="1"
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              const val = parseInt(
-                                (e.target as HTMLInputElement).value,
-                              );
-                              if (!isNaN(val)) updateHP(val);
-                              (e.target as HTMLInputElement).value = "";
+                              const inputValue = (e.target as HTMLInputElement)
+                                .value;
+                              if (inputValue === "") {
+                                (e.target as HTMLInputElement).value = "";
+                              } else {
+                                const val = parseInt(inputValue);
+                                if (!isNaN(val)) updateHP(val);
+                                (e.target as HTMLInputElement).value = "";
+                              }
                             }
                           }}
                         />
@@ -1911,7 +1952,14 @@ export function Tracker() {
                           variant="default"
                           size="icon"
                           className="h-10 w-10 shrink-0 bg-green-600 hover:bg-green-700"
-                          onClick={() => updateHP(1)}
+                          onClick={() => {
+                            if (hpInputRef.current) {
+                              const val = parseInt(
+                                hpInputRef.current.value || "1",
+                              );
+                              if (!isNaN(val)) updateHP(val);
+                            }
+                          }}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -1926,22 +1974,34 @@ export function Tracker() {
                           variant="outline"
                           size="icon"
                           className="h-10 w-10 shrink-0"
-                          onClick={() => updateTempHP(-1)}
+                          onClick={() => {
+                            if (tempHpInputRef.current) {
+                              const val = parseInt(
+                                tempHpInputRef.current.value || "1",
+                              );
+                              if (!isNaN(val)) updateTempHP(-val);
+                            }
+                          }}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
                         <Input
+                          ref={tempHpInputRef}
                           type="number"
                           className="h-10 text-center font-mono text-sm px-1"
                           placeholder={t.amount}
-                          value="1"
+                          defaultValue="1"
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              const val = parseInt(
-                                (e.target as HTMLInputElement).value,
-                              );
-                              if (!isNaN(val)) updateTempHP(val);
-                              (e.target as HTMLInputElement).value = "";
+                              const inputValue = (e.target as HTMLInputElement)
+                                .value;
+                              if (inputValue === "") {
+                                (e.target as HTMLInputElement).value = "";
+                              } else {
+                                const val = parseInt(inputValue);
+                                if (!isNaN(val)) updateTempHP(val);
+                                (e.target as HTMLInputElement).value = "";
+                              }
                             }
                           }}
                         />
@@ -1949,7 +2009,14 @@ export function Tracker() {
                           variant="outline"
                           size="icon"
                           className="h-10 w-10 shrink-0"
-                          onClick={() => updateTempHP(1)}
+                          onClick={() => {
+                            if (tempHpInputRef.current) {
+                              const val = parseInt(
+                                tempHpInputRef.current.value || "1",
+                              );
+                              if (!isNaN(val)) updateTempHP(val);
+                            }
+                          }}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -2114,8 +2181,12 @@ export function Tracker() {
                                   value={newBuffTotal}
                                   onChange={(e) => {
                                     const inputValue = e.target.value;
-                                    const val = parseInt(inputValue);
-                                    if (!isNaN(val)) setNewBuffTotal(val);
+                                    if (inputValue === "") {
+                                      setNewBuffTotal("");
+                                    } else {
+                                      const val = parseInt(inputValue);
+                                      if (!isNaN(val)) setNewBuffTotal(val);
+                                    }
                                   }}
                                 />
                               </div>
@@ -2651,8 +2722,12 @@ export function Tracker() {
                         value={newSpellLevel}
                         onChange={(e) => {
                           const inputValue = e.target.value;
-                          const val = parseInt(inputValue);
-                          if (!isNaN(val)) setNewSpellLevel(val);
+                          if (inputValue === "") {
+                            setNewSpellLevel("");
+                          } else {
+                            const val = parseInt(inputValue);
+                            if (!isNaN(val)) setNewSpellLevel(val);
+                          }
                         }}
                         className="h-8 w-16 text-xs font-mono"
                         min="1"
@@ -3332,8 +3407,12 @@ export function Tracker() {
                               value={newAbilityTotal}
                               onChange={(e) => {
                                 const inputValue = e.target.value;
-                                const val = parseInt(inputValue);
-                                if (!isNaN(val)) setNewAbilityTotal(val);
+                                if (inputValue === "") {
+                                  setNewAbilityTotal("");
+                                } else {
+                                  const val = parseInt(inputValue);
+                                  if (!isNaN(val)) setNewAbilityTotal(val);
+                                }
                               }}
                             />
                           </div>
@@ -3687,8 +3766,12 @@ export function Tracker() {
                                 value={newInventoryCount}
                                 onChange={(e) => {
                                   const inputValue = e.target.value;
-                                  const val = parseInt(inputValue);
-                                  if (!isNaN(val)) setNewInventoryCount(val);
+                                  if (inputValue === "") {
+                                    setNewInventoryCount("");
+                                  } else {
+                                    const val = parseInt(inputValue);
+                                    if (!isNaN(val)) setNewInventoryCount(val);
+                                  }
                                 }}
                               />
                             </div>
